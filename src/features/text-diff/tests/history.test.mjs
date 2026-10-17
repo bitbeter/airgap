@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { clearHistory, historyKey, readHistory, saveHistory } from "../src/lib/history.mjs"
+import { clearHistory, historyKey, readHistory, saveHistory } from "../lib/history.mjs"
 
 function memoryStorage() {
   const values = new Map()

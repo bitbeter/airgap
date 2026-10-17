@@ -5,7 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 import { parsePatch } from "diff"
-import { compareTexts } from "../src/lib/compare.mjs"
+import { compareTexts } from "../lib/compare.mjs"
 
 const fixtures = [
   { name: "insertion", before: "first\nlast\n", after: "first\ninserted\nlast\n" },

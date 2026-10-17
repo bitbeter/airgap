@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { compareTexts } from "../src/lib/compare.mjs"
+import { compareTexts } from "../lib/compare.mjs"
 
 function changedText(side) {
   return side.segments.filter((segment) => segment.changed).map((segment) => segment.text).join("")

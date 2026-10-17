@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import type { compareTexts } from "@/lib/compare.mjs"
+import type { compareTexts } from "../lib/compare.mjs"
 
 type Row = ReturnType<typeof compareTexts>["rows"][number]
 
