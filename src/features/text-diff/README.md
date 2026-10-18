@@ -23,6 +23,12 @@ jsdiff `diffLines` uses Myers for line changes. `diffArrays` handles block align
 
 Preserve spaces, tabs, ZWNJ, LF/CRLF differences, and missing final newlines. Do not split emoji or combining characters. Render user content as React text, never injected HTML. Results paginate at 200 aligned rows. The comparison has a four-second algorithm timeout and an explicit cancel action.
 
+## Markdown preview
+
+A shared text/preview toggle renders both current inputs side by side without requiring a comparison. Returning to text preserves the inputs and comparison. Markdown supports GFM tables, task lists, strikethrough, and fenced code; fenced `mermaid` blocks render dark diagrams. Preview and Mermaid load lazily. Raw HTML is skipped and remote Markdown images are replaced with labels to avoid background requests. Links open only on user action.
+
+Mermaid uses strict security, bounded source/edge counts, and SVG image output rather than injecting generated HTML into the page. Diagram errors show the source and a Persian error; stale asynchronous results are ignored, and temporary render containers are removed. The preview displays formatted documents, not highlighted semantic differences; precise changes remain in the existing comparison result.
+
 ## Storage contract
 
 Key: `airgap:diff-history:v1`. Value: an array of `{ before, after, savedAt }` objects. Keep the three most recent distinct successful pairs, newest first. Repeating a pair promotes it; opening an entry recalculates the result without changing history order. Failed or cancelled comparisons do not save. Do not change this key or schema without a migration.

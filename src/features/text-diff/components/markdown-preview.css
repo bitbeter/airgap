@@ -1,0 +1,20 @@
+.markdown-preview { overflow-wrap: anywhere; }
+.markdown-preview > :first-child { margin-top: 0; }
+.markdown-preview h1, .markdown-preview h2, .markdown-preview h3,
+.markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { font-weight: 600; margin-block: 1.25em .5em; line-height: 1.5; }
+.markdown-preview h1 { font-size: 1.75em; }
+.markdown-preview h2 { font-size: 1.5em; }
+.markdown-preview h3 { font-size: 1.25em; }
+.markdown-preview p, .markdown-preview ul, .markdown-preview ol, .markdown-preview blockquote { margin-block: .75em; }
+.markdown-preview ul { list-style: disc; padding-inline-start: 1.5em; }
+.markdown-preview ol { list-style: decimal; padding-inline-start: 1.5em; }
+.markdown-preview blockquote { border-inline-start: 3px solid hsl(var(--border)); padding-inline-start: 1em; color: hsl(var(--muted-foreground)); }
+.markdown-preview a { text-decoration: underline; text-underline-offset: 3px; }
+.markdown-preview pre { overflow-x: auto; white-space: pre; text-align: left; padding: .75em; margin-block: 1em; border-radius: var(--radius); background: hsl(var(--muted)); }
+.markdown-preview code { font-family: ui-monospace, monospace; font-size: .9em; }
+.markdown-preview :not(pre) > code { background: hsl(var(--muted)); padding: .15em .3em; border-radius: .25em; }
+.markdown-preview table { border-collapse: collapse; margin-block: 1em; width: 100%; }
+.markdown-preview th, .markdown-preview td { border: 1px solid hsl(var(--border)); padding: .4em .75em; }
+.markdown-preview th { background: hsl(var(--muted)); }
+.markdown-preview hr { margin-block: 1.5em; border-color: hsl(var(--border)); }
+.markdown-preview input[type="checkbox"] { margin-inline-end: .5em; }
