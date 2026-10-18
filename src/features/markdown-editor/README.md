@@ -1,0 +1,9 @@
+# Markdown editor
+
+Available at `#/markdown-editor`, with Persian labels and a responsive RTL layout: editor and live preview sit side by side on large screens and stack on smaller screens.
+
+Uses the existing `react-markdown` and `remark-gfm` dependencies for headings, lists, links, tables, task lists, strikethrough, and code blocks. Code blocks and inline code use isolated LTR direction. The textarea uses native `dir="auto"` and `unicode-bidi: plaintext` for per-paragraph direction. Each rendered paragraph, heading, list item, blockquote, and table cell uses independent native `dir="auto"` detection (first strong character, ignoring leading digits and punctuation). Lists reserve marker space on both sides for mixed-direction items. Tables retain the RTL page column order; cell text direction is independent, and explicit Markdown column alignment is preserved. Neutral-only blocks inherit the RTL page fallback. Raw HTML is skipped, unsafe URLs use the renderer's default filtering, and images render as text placeholders to avoid automatic external requests. Links open only on user interaction in a separate tab.
+
+State stays in memory and resets on navigation away. No storage, network calls, timers, or workers are introduced. React defers preview updates to prioritize typing; the preview updates without a submit action.
+
+Validation: run `npm test`, `npm run build`, and `npm run build:web`. In a browser, check live edits and clearing, Persian/English text, GFM tables and code, narrow layouts, direct hash navigation, refresh, back/forward, and switching to the existing diff page. Feature tests render real Markdown to HTML and verify per-block direction attributes, GFM properties, code isolation, and safe rendering. Browser checks remain necessary to validate visual bidirectional layout. The repository architecture test checks import boundaries.
