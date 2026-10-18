@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import InlineDiffWorker from "../diff.worker?worker&inline"
 import { clearHistory, readHistory, saveHistory, type HistoryEntry } from "../lib/history.mjs"
 import type { DiffResult } from "../lib/compare.mjs"
 
@@ -36,7 +37,9 @@ export function useTextDiff() {
     resetResult()
     setBusy(true)
     try {
-      const worker = new Worker(new URL("../diff.worker.ts", import.meta.url), { type: "module" })
+      const worker = import.meta.env.DEV || import.meta.env.MODE === "web"
+        ? new Worker(new URL("../diff.worker.ts", import.meta.url), { type: "module" })
+        : new InlineDiffWorker()
       workerRef.current = worker
       worker.onmessage = (event: MessageEvent<{ result?: DiffResult; error?: string }>) => {
         if (workerRef.current !== worker) return
