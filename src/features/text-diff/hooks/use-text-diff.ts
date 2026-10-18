@@ -9,7 +9,6 @@ export function useTextDiff() {
   const [result, setResult] = useState<DiffResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
-  const [page, setPage] = useState(0)
   const [historyState, setHistoryState] = useState<{ entries: HistoryEntry[]; error: string }>(() => {
     try {
       return { entries: readHistory(window.localStorage), error: "" }
@@ -30,7 +29,6 @@ export function useTextDiff() {
     setBusy(false)
     setResult(null)
     setError("")
-    setPage(0)
   }
 
   function compare(beforeText = before, afterText = after, remember = true) {
@@ -111,7 +109,7 @@ export function useTextDiff() {
   }
 
   return {
-    before, after, result, busy, error, page, setPage, historyState,
+    before, after, result, busy, error, historyState,
     updateBefore, updateAfter, swapTexts, clearTexts, openHistory, removeHistory,
     compare: () => compare(), cancel: resetResult,
   }

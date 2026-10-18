@@ -5,20 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DiffView } from "./diff-view"
 import type { DiffResult as ComparisonResult } from "../lib/compare.mjs"
 
-const pageSize = 200
-
 interface DiffResultProps {
   result: ComparisonResult | null
   busy: boolean
   error: string
-  page: number
-  onPageChange: (page: number) => void
   onCancel: () => void
 }
 
-export function DiffResult({ result, busy, error, page, onPageChange, onCancel }: DiffResultProps) {
+export function DiffResult({ result, busy, error, onCancel }: DiffResultProps) {
   const [showWhitespace, setShowWhitespace] = useState(false)
-  const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / pageSize)) : 1
 
   return (
     <Card aria-busy={busy}>
@@ -43,14 +38,7 @@ export function DiffResult({ result, busy, error, page, onPageChange, onCancel }
               <Button variant="outline" size="sm" aria-pressed={showWhitespace} onClick={() => setShowWhitespace(!showWhitespace)}>نمایش همهٔ فاصله‌ها {showWhitespace ? "✓" : ""}</Button>
             </div>
             <p className="text-xs leading-6 text-muted-foreground">فاصلهٔ تغییرکرده: · ، تب: ⇥ ، نیم‌فاصله: [ZWNJ]؛ LF و CRLF پایان خط و EOF انتهای متن است.</p>
-            <DiffView rows={result.rows.slice(page * pageSize, (page + 1) * pageSize)} showWhitespace={showWhitespace} />
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between gap-2">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onPageChange(page - 1)}>قبلی</Button>
-                <span className="text-xs text-muted-foreground">صفحهٔ {(page + 1).toLocaleString("fa-IR")} از {totalPages.toLocaleString("fa-IR")}</span>
-                <Button variant="outline" size="sm" disabled={page + 1 === totalPages} onClick={() => onPageChange(page + 1)}>بعدی</Button>
-              </div>
-            )}
+            <DiffView rows={result.rows} showWhitespace={showWhitespace} />
           </div>
         )}
       </CardContent>

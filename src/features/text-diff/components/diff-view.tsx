@@ -1,3 +1,5 @@
+import { useRef } from "react"
+import { DiffMinimap } from "./diff-minimap"
 import { cn } from "@/lib/utils"
 import type { compareTexts } from "../lib/compare.mjs"
 
@@ -37,12 +39,18 @@ function DiffCell({ line, other, side, showWhitespace }: { line: Row["before"]; 
 }
 
 export function DiffView({ rows, showWhitespace }: { rows: Row[]; showWhitespace: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
   return (
-    <div className="max-h-[36rem] overflow-auto rounded-md border" role="region" aria-label="مقایسهٔ کنارهم متن اصلی و جدید" tabIndex={0}>
-      <div className="min-w-[640px]">
+    <div className="flex items-stretch gap-2">
+    <div ref={scrollRef} className="min-w-0 flex-1 max-h-[36rem] overflow-auto rounded-md border" role="region" aria-label="مقایسهٔ کنارهم متن اصلی و جدید" tabIndex={0}>
+      <div ref={contentRef} className="min-w-[640px]">
         <div className="sticky top-0 z-10 grid grid-cols-2 border-b bg-background text-sm font-medium"><div className="border-e px-4 py-3">متن اصلی <span className="text-red-400">(−)</span></div><div className="px-4 py-3">متن جدید <span className="text-green-400">(+)</span></div></div>
-        {rows.map((row, index) => <div key={index} className="grid grid-cols-2 text-sm leading-7"><DiffCell line={row.before} other={row.after} side="before" showWhitespace={showWhitespace} /><DiffCell line={row.after} other={row.before} side="after" showWhitespace={showWhitespace} /></div>)}
+        {rows.map((row, index) => <div key={index} data-diff-row className="grid grid-cols-2 text-sm leading-7"><DiffCell line={row.before} other={row.after} side="before" showWhitespace={showWhitespace} /><DiffCell line={row.after} other={row.before} side="after" showWhitespace={showWhitespace} /></div>)}
       </div>
+    </div>
+    <DiffMinimap rows={rows} scrollRef={scrollRef} contentRef={contentRef} showWhitespace={showWhitespace} />
     </div>
   )
 }
