@@ -29,6 +29,17 @@ test("GFM table cells detect direction without losing explicit alignment", () =>
   assert.match(html, /<td style="text-align:right" dir="auto">Hello<\/td>/)
 })
 
+test("Mermaid fenced blocks and unlabelled graph code are detected", () => {
+  const fenced = render("```mermaid\nflowchart TD\n  A[شروع] --> B[پایان]\n```")
+  assert.match(fenced, /aria-label="نمودار Mermaid"/)
+  assert.doesNotMatch(fenced, /language-mermaid/)
+  const unlabelled = render("    graph TD;\n      A-->B;\n      A-->C;\n      B-->D;\n      C-->D;")
+  assert.match(unlabelled, /aria-label="نمودار Mermaid"/)
+  const plain = render("سیسیب\n\n  graph TD;\n      A-->B;\n      A-->C;\n      B-->D;\n      C-->D;")
+  assert.match(plain, /<p dir="auto">سیسیب<\/p>/)
+  assert.match(plain, /aria-label="نمودار Mermaid"/)
+})
+
 test("inline and fenced code keep LTR and language metadata", () => {
   const html = render('متن `foo(bar)` فارسی\n\n```js\nconst title = "سلام";\n```')
   assert.match(html, /<code dir="ltr">foo\(bar\)<\/code>/)
