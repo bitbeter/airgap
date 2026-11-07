@@ -1,7 +1,9 @@
 import { useRef } from "react"
+import { ChevronsUpDown } from "lucide-react"
 import { DiffMinimap } from "./diff-minimap"
 import { cn } from "@/lib/utils"
 import type { compareTexts } from "../lib/compare.mjs"
+import type { ChangeRange, DisplayItem } from "../lib/hunks.mjs"
 
 type Row = ReturnType<typeof compareTexts>["rows"][number]
 
@@ -38,7 +40,29 @@ function DiffCell({ line, other, side, showWhitespace }: { line: Row["before"]; 
   )
 }
 
-export function DiffView({ rows, showWhitespace }: { rows: Row[]; showWhitespace: boolean }) {
+function CollapsedRow({ item, rows, onExpand }: { item: Extract<DisplayItem, { kind: "collapsed" }>; rows: Row[]; onExpand: (from: number) => void }) {
+  const first = rows[item.from].before?.number ?? 0
+  const last = rows[item.to - 1].before?.number ?? 0
+  const count = item.count.toLocaleString("fa-IR")
+  return (
+    <button type="button" onClick={() => onExpand(item.from)}
+      aria-label={`نمایش ${count} خط بدون تغییر، خط ${first.toLocaleString("fa-IR")} تا ${last.toLocaleString("fa-IR")} متن اصلی`}
+      className="flex w-full items-center justify-center gap-2 border-y bg-muted/30 px-4 py-1 text-xs leading-6 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+      <ChevronsUpDown className="size-3.5" aria-hidden="true" />
+      {count} خط بدون تغییر · نمایش
+    </button>
+  )
+}
+
+type DiffViewProps = {
+  rows: Row[]
+  items: DisplayItem[]
+  activeChange: ChangeRange | null
+  showWhitespace: boolean
+  onExpand: (from: number) => void
+}
+
+export function DiffView({ rows, items, activeChange, showWhitespace, onExpand }: DiffViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -47,7 +71,18 @@ export function DiffView({ rows, showWhitespace }: { rows: Row[]; showWhitespace
     <div ref={scrollRef} className="min-w-0 flex-1 max-h-[36rem] overflow-auto rounded-md border" role="region" aria-label="مقایسهٔ کنارهم متن اصلی و جدید" tabIndex={0}>
       <div ref={contentRef} className="min-w-[640px]">
         <div className="sticky top-0 z-10 grid grid-cols-2 border-b bg-background text-sm font-medium"><div className="border-e px-4 py-3">متن اصلی <span className="text-red-400">(−)</span></div><div className="px-4 py-3">متن جدید <span className="text-green-400">(+)</span></div></div>
-        {rows.map((row, index) => <div key={index} data-diff-row className="grid grid-cols-2 text-sm leading-7"><DiffCell line={row.before} other={row.after} side="before" showWhitespace={showWhitespace} /><DiffCell line={row.after} other={row.before} side="after" showWhitespace={showWhitespace} /></div>)}
+        {items.map((item) => {
+          if (item.kind === "collapsed") return <CollapsedRow key={`collapsed-${item.from}`} item={item} rows={rows} onExpand={onExpand} />
+          const row = rows[item.index]
+          const active = !!activeChange && item.index >= activeChange.start && item.index < activeChange.end
+          return (
+            <div key={item.index} data-diff-row={row.kind} data-diff-index={item.index}
+              className={cn("grid grid-cols-2 text-sm leading-7", active && "relative before:absolute before:inset-y-0 before:start-0 before:z-[1] before:w-1 before:bg-ring before:content-['']")}>
+              <DiffCell line={row.before} other={row.after} side="before" showWhitespace={showWhitespace} />
+              <DiffCell line={row.after} other={row.before} side="after" showWhitespace={showWhitespace} />
+            </div>
+          )
+        })}
       </div>
     </div>
     <DiffMinimap rows={rows} scrollRef={scrollRef} contentRef={contentRef} showWhitespace={showWhitespace} />

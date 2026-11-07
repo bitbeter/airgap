@@ -57,8 +57,9 @@ export function DiffMinimap({ rows, scrollRef, contentRef, showWhitespace }: Pro
     function measure() {
       if (!content) return
       const origin = content.getBoundingClientRect().top
-      markers = Array.from(content.querySelectorAll<HTMLElement>("[data-diff-row]")).flatMap((element, index) => {
-        const kind = rows[index]?.kind
+      // Rows carry their kind, so collapsed ranges do not shift the mapping.
+      markers = Array.from(content.querySelectorAll<HTMLElement>("[data-diff-row]")).flatMap((element) => {
+        const kind = element.dataset.diffRow as DiffRow["kind"] | undefined
         if (!kind || kind === "same") return []
         const bounds = element.getBoundingClientRect()
         return [{ top: bounds.top - origin, height: bounds.height, kind }]
