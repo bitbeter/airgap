@@ -10,12 +10,14 @@ Public entry: `index.ts`. Route: `#/text-diff`.
 - `components/diff-result.tsx`: result status, change navigation, collapse and whitespace toggles, cancellation, and full results.
 - `components/diff-view.tsx`: aligned side-by-side rows, collapsed-range placeholders, active-change marker, grapheme highlights, and invisible-character markers.
 - `components/diff-minimap.tsx`: canvas change overview, viewport indicator, pointer and keyboard scroll navigation; measures rendered row heights and observes layout changes.
+- `components/patch-export.tsx`: editable patch file names, copy, and `.patch` download.
 - `components/diff-history.tsx`: stored comparisons, previews, reopen and clear actions.
 - `lib/compare.mjs`: pure jsdiff comparison; public types in `compare.d.mts`.
 - `lib/hunks.mjs`: pure grouping of changed rows and collapsing of unchanged runs; public types in `hunks.d.mts`.
+- `lib/patch.mjs`: jsdiff unified patch creation and formatting; public types in `patch.d.mts`.
 - `lib/history.mjs`: storage validation and retention; public types in `history.d.mts`.
-- `diff.worker.ts`: worker request/response adapter.
-- `tests/`: comparison, Git compatibility, change navigation/collapsing, and storage regression tests.
+- `diff.worker.ts`: worker request/response adapter; returns the comparison and its structured patch.
+- `tests/`: comparison, Git compatibility, patch export (`git diff` and `git apply`), change navigation/collapsing, and storage regression tests.
 
 ## Behavior to preserve
 
@@ -32,6 +34,14 @@ A change is one contiguous block of modified, added, or removed rows. "Previous 
 "Only changes and 3 surrounding lines" is off by default, so the full result is unchanged unless the user opts in. When on, unchanged runs keep three context lines next to each change; leading and trailing runs keep context only on the changed side. A hidden range must contain at least two rows, otherwise it stays visible. Each hidden range is a keyboard-accessible button that expands only that range. Change rows are never hidden. The setting persists while the page stays open; the navigation position and expanded ranges reset with each new result, so editing an input resets them. Nothing is stored.
 
 Rendered rows carry `data-diff-row` (their kind) and `data-diff-index`. The minimap reads kinds from the rendered rows, so collapsed ranges do not shift its markers; its resize observer remeasures after expanding.
+
+## Patch export
+
+The result card offers the comparison as a unified diff to copy or download as `.patch`. The worker builds a structured patch with jsdiff `structuredPatch` (three context lines, the same Myers line diff as the comparison) after the comparison, with its own four-second timeout. A patch timeout keeps the comparison and only disables export with a message. The page formats the patch with `formatPatch`, so editing a file name never repeats the diff.
+
+File names default to `a/original.txt` and `b/new.txt` and are used only in the `---`/`+++` headers. Whitespace and control characters become `_` so headers stay valid; empty names fall back to the defaults. The download is named after the new file (`new.patch`), uses a temporary Blob URL that is revoked after the click, and works in the portable build. Identical texts produce no patch and disable both actions. Names last while the page stays open and are not stored.
+
+Spaces, tabs, ZWNJ, CRLF, and missing final newlines (`\ No newline at end of file`) are preserved. Tests compare the output with `git diff --no-index --diff-algorithm=myers --no-indent-heuristic --unified=3`, ignoring only Git's `diff --git`/`index` lines, its omitted hunk count of 1, and its optional section heading after `@@`, and verify that `git apply` reproduces the new text.
 
 ## Markdown preview
 
@@ -53,4 +63,4 @@ npm test
 npm run build
 ```
 
-Git is required for compatibility tests. In a browser, also check copy, cancel, swap, change navigation and shortcuts, collapsing and expanding with the minimap, inline highlights, whitespace display, results longer than 200 rows, history across reloads, and navigation away during comparison.
+Git is required for compatibility tests. In a browser, also check copy, cancel, swap, patch copy/download, change navigation and shortcuts, collapsing and expanding with the minimap, inline highlights, whitespace display, results longer than 200 rows, history across reloads, and navigation away during comparison.

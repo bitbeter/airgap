@@ -3,22 +3,26 @@ import { ChevronDown, ChevronUp, FileDiff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DiffView } from "./diff-view"
+import { PatchExport } from "./patch-export"
 import type { DiffResult as ComparisonResult } from "../lib/compare.mjs"
 import { collapseRows, groupChanges, type DisplayItem } from "../lib/hunks.mjs"
+import { defaultNewName, defaultOldName, type StructuredPatch } from "../lib/patch.mjs"
 
 const contextLines = 3
 const noExpanded: number[] = []
 
 interface DiffResultProps {
   result: ComparisonResult | null
+  patch: StructuredPatch | null
   busy: boolean
   error: string
   onCancel: () => void
 }
 
-export function DiffResult({ result, busy, error, onCancel }: DiffResultProps) {
+export function DiffResult({ result, patch, busy, error, onCancel }: DiffResultProps) {
   const [showWhitespace, setShowWhitespace] = useState(false)
   const [collapse, setCollapse] = useState(false)
+  const [patchNames, setPatchNames] = useState({ old: defaultOldName, new: defaultNewName })
   // Position and expanded ranges belong to one result; a new result starts fresh.
   const [navigation, setNavigation] = useState<{ result: ComparisonResult | null; current: number | null; expanded: number[] }>({ result: null, current: null, expanded: noExpanded })
   const { current, expanded } = navigation.result === result ? navigation : { current: null, expanded: noExpanded }
@@ -66,6 +70,7 @@ export function DiffResult({ result, busy, error, onCancel }: DiffResultProps) {
             {busy && <Button variant="outline" onClick={onCancel}>لغو مقایسه</Button>}
           </div>
         ) : (
+          <div className="space-y-4">
           <div ref={regionRef} className="space-y-4" onKeyDown={onKeyDown}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2" role="group" aria-label="پیمایش تغییرات">
@@ -84,6 +89,8 @@ export function DiffResult({ result, busy, error, onCancel }: DiffResultProps) {
             <p className="text-xs leading-6 text-muted-foreground">فاصلهٔ تغییرکرده: · ، تب: ⇥ ، نیم‌فاصله: [ZWNJ]؛ LF و CRLF پایان خط و EOF انتهای متن است.</p>
             <DiffView rows={result.rows} items={items} activeChange={current === null ? null : changes[current]} showWhitespace={showWhitespace}
               onExpand={(from) => setNavigation({ result, current, expanded: [...expanded, from] })} />
+          </div>
+          <PatchExport patch={patch} names={patchNames} onNamesChange={setPatchNames} />
           </div>
         )}
       </CardContent>

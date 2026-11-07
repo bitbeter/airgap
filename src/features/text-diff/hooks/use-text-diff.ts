@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react"
 import InlineDiffWorker from "../diff.worker?worker&inline"
 import { clearHistory, readHistory, saveHistory, type HistoryEntry } from "../lib/history.mjs"
 import type { DiffResult } from "../lib/compare.mjs"
+import type { StructuredPatch } from "../lib/patch.mjs"
 
 export function useTextDiff() {
   const [before, setBefore] = useState("")
   const [after, setAfter] = useState("")
   const [result, setResult] = useState<DiffResult | null>(null)
+  const [patch, setPatch] = useState<StructuredPatch | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [historyState, setHistoryState] = useState<{ entries: HistoryEntry[]; error: string }>(() => {
@@ -28,6 +30,7 @@ export function useTextDiff() {
     workerRef.current = null
     setBusy(false)
     setResult(null)
+    setPatch(null)
     setError("")
   }
 
@@ -39,9 +42,10 @@ export function useTextDiff() {
         ? new Worker(new URL("../diff.worker.ts", import.meta.url), { type: "module" })
         : new InlineDiffWorker()
       workerRef.current = worker
-      worker.onmessage = (event: MessageEvent<{ result?: DiffResult; error?: string }>) => {
+      worker.onmessage = (event: MessageEvent<{ result?: DiffResult; patch?: StructuredPatch | null; error?: string }>) => {
         if (workerRef.current !== worker) return
         setResult(event.data.result ?? null)
+        setPatch(event.data.patch ?? null)
         setError(event.data.error ?? "")
         setBusy(false)
         worker.terminate()
@@ -109,7 +113,7 @@ export function useTextDiff() {
   }
 
   return {
-    before, after, result, busy, error, historyState,
+    before, after, result, patch, busy, error, historyState,
     updateBefore, updateAfter, swapTexts, clearTexts, openHistory, removeHistory,
     compare: () => compare(), cancel: resetResult,
   }

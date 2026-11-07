@@ -31,7 +31,7 @@ export function TextDiffPage() {
         <Button variant="outline" disabled={empty} onClick={diff.swapTexts}><ArrowLeftRight />جابه‌جایی متن‌ها</Button>
         <Button variant="ghost" disabled={empty} onClick={diff.clearTexts}><Trash2 />پاک کردن</Button>
       </div>
-      <DiffResult result={diff.result} busy={diff.busy} error={diff.error} onCancel={diff.cancel} />
+      <DiffResult result={diff.result} patch={diff.patch} busy={diff.busy} error={diff.error} onCancel={diff.cancel} />
       <DiffHistory entries={diff.historyState.entries} error={diff.historyState.error} onOpen={diff.openHistory} onClear={diff.removeHistory} />
     </div>
   )
