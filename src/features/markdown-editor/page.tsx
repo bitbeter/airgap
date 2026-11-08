@@ -1,10 +1,14 @@
-import { useDeferredValue, useState } from "react"
+import { useDeferredValue, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { flushSync } from "react-dom"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { MarkdownToolbar, modifierLabel } from "./components/toolbar"
 import { readDraft, saveDraft } from "./draft.mjs"
+import { changedRange, continueList, formatText, indentList, type FormatAction, type FormatResult } from "./format.mjs"
+import { textStats } from "./stats.mjs"
 import { markdownComponents } from "./markdown-components.mjs"
 import "./preview.css"
 
@@ -29,6 +33,53 @@ export function MarkdownEditorPage() {
   }
 
   const preview = useDeferredValue(text)
+  const stats = useMemo(() => textStats(preview), [preview])
+  const sourceRef = useRef<HTMLTextAreaElement>(null)
+
+  function applyEdit(result: FormatResult | null) {
+    const source = sourceRef.current
+    if (!result || !source) return
+    const { start, end, insert } = changedRange(source.value, result.text)
+    source.focus()
+    source.setSelectionRange(start, end)
+    let inserted = start === end && !insert
+    try {
+      // Native editing keeps browser undo; its input event saves through onChange.
+      if (!inserted) inserted = document.execCommand(insert ? "insertText" : "delete", false, insert)
+    } catch {
+      inserted = false
+    }
+    if (!inserted || source.value !== result.text) flushSync(() => updateText(result.text))
+    source.setSelectionRange(result.selectionStart, result.selectionEnd)
+  }
+
+  function runAction(action: FormatAction) {
+    const source = sourceRef.current
+    if (source) applyEdit(formatText(source.value, source.selectionStart, source.selectionEnd, action))
+  }
+
+  function onSourceKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing) return
+    const { value, selectionStart, selectionEnd } = event.currentTarget
+    const modifier = modifierLabel === "⌘" ? event.metaKey : event.ctrlKey
+    let result: FormatResult | null = null
+    if (modifier && !event.altKey && !event.shiftKey) {
+      // Physical key codes also work with a Persian keyboard layout.
+      const action = ({ KeyB: "bold", KeyI: "italic", KeyK: "link" } as const)[event.code as "KeyB" | "KeyI" | "KeyK"]
+      if (!action) return
+      result = formatText(value, selectionStart, selectionEnd, action)
+    } else if (event.key === "Enter" && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      result = continueList(value, selectionStart, selectionEnd)
+    } else if (event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      // Tab outside lists, or with nothing to change, still moves focus.
+      result = indentList(value, selectionStart, selectionEnd, event.shiftKey)
+    }
+    if (!result) return
+    event.preventDefault()
+    applyEdit(result)
+  }
+
+  const number = (value: number) => value.toLocaleString("fa-IR")
 
   return (
     <div className="space-y-6">
@@ -55,17 +106,28 @@ export function MarkdownEditorPage() {
                   : "متن به‌صورت خودکار در این مرورگر ذخیره می‌شود؛ با پاک کردن کامل متن، نسخهٔ ذخیره‌شده هم حذف می‌شود."}
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            <MarkdownToolbar controls="markdown-source" onAction={runAction} />
             <Textarea
+              ref={sourceRef}
               id="markdown-source"
               dir="auto"
               value={text}
               onChange={(event) => updateText(event.target.value)}
-              aria-describedby="markdown-storage-status"
+              onKeyDown={onSourceKeyDown}
+              aria-describedby="markdown-storage-status markdown-editor-help"
               placeholder="متن Markdown را اینجا بنویسید…"
               spellCheck={false}
               className="markdown-editor-source min-h-[28rem] resize-y font-mono leading-7"
             />
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs leading-6 text-muted-foreground">
+              <p aria-label="آمار متن">
+                {number(stats.words)} کلمه · {number(stats.characters)} نویسه · {number(stats.lines)} خط · {stats.readingMinutes ? `حدود ${number(stats.readingMinutes)} دقیقه مطالعه` : "بدون زمان مطالعه"}
+              </p>
+              <p id="markdown-editor-help">
+                <span dir="ltr">{modifierLabel}+B</span> پررنگ، <span dir="ltr">{modifierLabel}+I</span> ایتالیک، <span dir="ltr">{modifierLabel}+K</span> پیوند؛ Tab و Shift+Tab تورفتگی آیتم فهرست
+              </p>
+            </div>
           </CardContent>
         </Card>
         <Card className="min-w-0">
