@@ -1,0 +1,43 @@
+/* Print only the rendered document: hide every element that neither contains the
+   preview nor is inside it, and flatten the containing shell and card layout.
+   Paper is the one allowed exception to the dark theme. Rules are scoped with
+   :has() because the stylesheet stays loaded after leaving this page. */
+@media print {
+  :root:has(.markdown-editor-preview) {
+    color-scheme: light;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 33%;
+    --border: 0 0% 73%;
+  }
+  html:has(.markdown-editor-preview), body:has(.markdown-editor-preview) { background: #fff !important; color: #111 !important; }
+  body:has(.markdown-editor-preview) *:not(:has(.markdown-editor-preview)):not(.markdown-editor-preview):not(.markdown-editor-preview *) { display: none !important; }
+  body:has(.markdown-editor-preview) *:has(.markdown-editor-preview) {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .markdown-editor-preview {
+    min-height: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    padding: 0 !important;
+    color: #111;
+    font-size: 11pt;
+  }
+  .markdown-editor-preview pre { white-space: pre-wrap; overflow: visible; }
+  .markdown-editor-preview pre, .markdown-editor-preview figure, .markdown-editor-preview tr, .markdown-editor-preview img { break-inside: avoid; }
+  .markdown-editor-preview h1, .markdown-editor-preview h2, .markdown-editor-preview h3 { break-after: avoid; }
+  /* Diagrams are rendered with the dark Mermaid theme; keep their dark backing. */
+  .markdown-editor-preview figure { background: #0a0a0a !important; color: #fafafa; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .markdown-editor-preview figure details { display: none; }
+}

@@ -34,6 +34,24 @@ function codeSource(node) {
   return (node?.children ?? []).map((child) => child?.value ?? "").join("")
 }
 
+// Renders a diagram to an SVG data URI. An SVG loaded as an image cannot
+// execute scripts or load external resources, in the page or in exports.
+export async function renderMermaid(source, isCancelled = () => false) {
+  if (source.length > maxSourceLength) throw new Error("Diagram too large")
+  const mermaid = await loadRenderer()
+  if (isCancelled()) throw new Error("Cancelled")
+  const container = document.createElement("div")
+  container.style.cssText = "position:absolute;left:-100000px;top:0;visibility:hidden;width:1000px"
+  container.setAttribute("aria-hidden", "true")
+  document.body.appendChild(container)
+  try {
+    const { svg } = await mermaid.render(`airgap-mermaid-${++nextDiagramId}`, source, container)
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+  } finally {
+    container.remove()
+  }
+}
+
 export function MermaidDiagram({ source }) {
   const [image, setImage] = useState("")
   const [failed, setFailed] = useState(false)
@@ -43,22 +61,11 @@ export function MermaidDiagram({ source }) {
     setImage("")
     setFailed(false)
     const timer = window.setTimeout(async () => {
-      let container
       try {
-        if (source.length > maxSourceLength) throw new Error("Diagram too large")
-        const mermaid = await loadRenderer()
-        if (cancelled) return
-        container = document.createElement("div")
-        container.style.cssText = "position:absolute;left:-100000px;top:0;visibility:hidden;width:1000px"
-        container.setAttribute("aria-hidden", "true")
-        document.body.appendChild(container)
-        const { svg } = await mermaid.render(`airgap-mermaid-${++nextDiagramId}`, source, container)
-        // SVG loaded as an image cannot execute scripts or load external resources.
-        if (!cancelled) setImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`)
+        const image = await renderMermaid(source, () => cancelled)
+        if (!cancelled) setImage(image)
       } catch {
         if (!cancelled) setFailed(true)
-      } finally {
-        container?.remove()
       }
     }, 150)
     return () => {
@@ -94,17 +101,6 @@ export function MermaidDiagram({ source }) {
   )
 }
 
-// Let the browser apply Unicode first-strong detection to each text block.
-// A single auto direction on the preview would make later blocks inherit it.
-const autoBlocks = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "th", "td"]
-
-export const markdownComponents = Object.fromEntries(autoBlocks.map((tag) => [
-  tag,
-  function AutoDirection({ node: _node, ...props }) {
-    return createElement(tag, { ...props, dir: "auto" })
-  },
-]))
-
 function plainText(children) {
   if (typeof children === "string" || typeof children === "number") return String(children)
   if (Array.isArray(children)) return children.map(plainText).join("")
@@ -112,31 +108,50 @@ function plainText(children) {
   return ""
 }
 
-markdownComponents.p = function Paragraph({ node: _node, children, ...props }) {
-  const source = plainText(children).trim()
-  if (looksLikeMermaid(source)) return createElement(MermaidDiagram, { source })
-  return createElement("p", { ...props, dir: "auto" }, children)
+// Let the browser apply Unicode first-strong detection to each text block.
+// A single auto direction on the preview would make later blocks inherit it.
+const autoBlocks = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "th", "td"]
+
+// The preview and exports share one safe renderer and differ only in how a
+// Mermaid diagram is displayed.
+export function createMarkdownComponents(Diagram) {
+  const components = Object.fromEntries(autoBlocks.map((tag) => [
+    tag,
+    function AutoDirection({ node: _node, ...props }) {
+      return createElement(tag, { ...props, dir: "auto" })
+    },
+  ]))
+
+  components.p = function Paragraph({ node: _node, children, ...props }) {
+    const source = plainText(children).trim()
+    if (looksLikeMermaid(source)) return createElement(Diagram, { source })
+    return createElement("p", { ...props, dir: "auto" }, children)
+  }
+
+  components.pre = function CodeBlock({ children, node }) {
+    const code = node?.children?.find((child) => child?.type === "element" && child?.tagName === "code")
+    const className = code?.properties?.className
+    const classes = Array.isArray(className) ? className : typeof className === "string" ? className.split(/\s+/) : []
+    const source = codeSource(code)
+    const isMermaid = classes.some((name) => name.toLowerCase() === "language-mermaid") || looksLikeMermaid(source)
+    if (isMermaid) return createElement(Diagram, { source: source.trim() })
+    return createElement("pre", { dir: "ltr" }, children)
+  }
+
+  components.code = function Code({ node: _node, ...props }) {
+    return createElement("code", { ...props, dir: "ltr" })
+  }
+
+  components.img = function ImagePlaceholder({ alt }) {
+    return createElement("span", { dir: "rtl", className: "text-muted-foreground" },
+      "[تصویر: ", createElement("bdi", null, alt || "بدون توضیح"), " — بارگیری خارجی غیرفعال است]")
+  }
+
+  components.a = function Link({ href, children }) {
+    return createElement("a", { href, target: "_blank", rel: "noopener noreferrer" }, children)
+  }
+
+  return components
 }
 
-markdownComponents.pre = function CodeBlock({ children, node }) {
-  const code = node?.children?.find((child) => child?.type === "element" && child?.tagName === "code")
-  const className = code?.properties?.className
-  const classes = Array.isArray(className) ? className : typeof className === "string" ? className.split(/\s+/) : []
-  const source = codeSource(code)
-  const isMermaid = classes.some((name) => name.toLowerCase() === "language-mermaid") || looksLikeMermaid(source)
-  if (isMermaid) return createElement(MermaidDiagram, { source: source.trim() })
-  return createElement("pre", { dir: "ltr" }, children)
-}
-
-markdownComponents.code = function Code({ node: _node, ...props }) {
-  return createElement("code", { ...props, dir: "ltr" })
-}
-
-markdownComponents.img = function ImagePlaceholder({ alt }) {
-  return createElement("span", { dir: "rtl", className: "text-muted-foreground" },
-    "[تصویر: ", createElement("bdi", null, alt || "بدون توضیح"), " — بارگیری خارجی غیرفعال است]")
-}
-
-markdownComponents.a = function Link({ href, children }) {
-  return createElement("a", { href, target: "_blank", rel: "noopener noreferrer" }, children)
-}
+export const markdownComponents = createMarkdownComponents(MermaidDiagram)

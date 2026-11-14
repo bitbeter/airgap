@@ -5,12 +5,14 @@ import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { ExportMenu } from "./components/export-menu"
 import { MarkdownToolbar, modifierLabel } from "./components/toolbar"
 import { readDraft, saveDraft } from "./draft.mjs"
 import { changedRange, continueList, formatText, indentList, type FormatAction, type FormatResult } from "./format.mjs"
 import { textStats } from "./stats.mjs"
 import { markdownComponents } from "./markdown-components.mjs"
 import "./preview.css"
+import "./print.css"
 
 export function MarkdownEditorPage() {
   const [{ text, storageError }, setDraft] = useState(() => {
@@ -35,6 +37,7 @@ export function MarkdownEditorPage() {
   const preview = useDeferredValue(text)
   const stats = useMemo(() => textStats(preview), [preview])
   const sourceRef = useRef<HTMLTextAreaElement>(null)
+  const previewRef = useRef<HTMLElement>(null)
 
   function applyEdit(result: FormatResult | null) {
     const source = sourceRef.current
@@ -131,9 +134,13 @@ export function MarkdownEditorPage() {
           </CardContent>
         </Card>
         <Card className="min-w-0">
-          <CardHeader><CardTitle id="markdown-preview-title">پیش‌نمایش زنده</CardTitle></CardHeader>
+          <CardHeader className="space-y-3">
+            <CardTitle id="markdown-preview-title">پیش‌نمایش زنده</CardTitle>
+            <ExportMenu text={text} previewRef={previewRef} />
+          </CardHeader>
           <CardContent>
             <section
+              ref={previewRef}
               aria-labelledby="markdown-preview-title"
               aria-busy={text !== preview}
               dir="rtl"
