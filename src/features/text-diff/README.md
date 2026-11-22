@@ -4,9 +4,9 @@ Public entry: `index.ts`. Route: `#/text-diff`.
 
 ## File responsibilities
 
-- `page.tsx`: compose inputs, actions, result, and history.
+- `page.tsx`: compose inputs, actions, result, history, and local file opening/dropping.
 - `hooks/use-text-diff.ts`: input/result state, worker creation and cleanup, cancellation, and history actions.
-- `components/text-input.tsx`: labeled input, character/line counts, and shared copy button.
+- `components/text-input.tsx`: labeled input, character/line counts, shared copy and file-open buttons.
 - `components/diff-result.tsx`: result status, change navigation, collapse and whitespace toggles, cancellation, and full results.
 - `components/diff-view.tsx`: aligned side-by-side rows, collapsed-range placeholders, active-change marker, grapheme highlights, and invisible-character markers.
 - `components/diff-minimap.tsx`: canvas change overview, viewport indicator, pointer and keyboard scroll navigation; measures rendered row heights and observes layout changes.
@@ -48,6 +48,12 @@ Spaces, tabs, ZWNJ, CRLF, and missing final newlines (`\ No newline at end of fi
 A shared text/preview toggle renders both current inputs side by side without requiring a comparison. Returning to text preserves the inputs and comparison. Markdown supports GFM tables, task lists, strikethrough, and fenced code; fenced `mermaid` blocks render dark diagrams. Preview and Mermaid load lazily. Raw HTML is skipped and remote Markdown images are replaced with labels to avoid background requests. Links open only on user action.
 
 Mermaid uses strict security, bounded source/edge counts, and SVG image output rather than injecting generated HTML into the page. Diagram errors show the source and a Persian error; stale asynchronous results are ignored, and temporary render containers are removed. The preview displays formatted documents, not highlighted semantic differences; precise changes remain in the existing comparison result.
+
+## Opening local files
+
+Each input has a "باز کردن فایل" button and accepts dropped files. The shared reader accepts `.txt`, `.md`, `.markdown`, `.json`, `.csv`, `.log`, `.yaml`, `.yml`, `.xml`, `.html`, and any `text/*` file up to 5 MB. It tries strict UTF-8 first, falls back to windows-1256 for legacy Persian files, removes a UTF-8 BOM, and reports the encoding used; CRLF is preserved exactly. Reading happens locally with no network request.
+
+Dropping two files at once anywhere on the inputs area sorts them by name and puts the first in the original input and the second in the new input, with a status message explaining the order. A single file dropped between the inputs is rejected with a hint to drop it on one of them. Opening a file behaves like editing: a running worker is terminated and the previous result is cleared. Read errors and unsupported files show a Persian status message without breaking the page.
 
 ## Storage contract
 

@@ -21,6 +21,12 @@ Below the editor, `stats.mjs` counts words with `Intl.Segmenter` (ZWNJ-joined Pe
 
 The latest draft is stored as an exact string in localStorage under `airgap:markdown-editor:draft:v1`. Every input change saves synchronously, without a debounce or waiting for preview rendering. Reloading or navigating back to the page restores that draft. This is a single latest-work entry, not a list of revisions. The clear button and deleting all input both remove only this key; whitespace-only input is preserved. Initial loading never overwrites storage. Storage access/quota failures keep the editor usable and show a Persian status message; unsuccessful saves leave the previous stored draft intact. No network calls, timers, or workers are introduced. React defers preview updates to prioritize typing; the preview updates without a submit action.
 
+## Opening local files
+
+The editor card has a "باز کردن فایل" button and accepts dropped files. The shared reader accepts `.txt`, `.md`, `.markdown`, `.json`, `.csv`, `.log`, `.yaml`, `.yml`, `.xml`, `.html`, and any `text/*` file up to 5 MB. It tries strict UTF-8 first, falls back to windows-1256 for legacy Persian files, removes a UTF-8 BOM, and reports the encoding used; CRLF is preserved exactly. Reading happens locally with no network request.
+
+Replacing non-empty text asks for native confirmation first. A successful read is saved through the normal draft path, so it survives reloads; read errors and unsupported files show a Persian status message without breaking the editor. Only the first file is used when several are dropped.
+
 Format tests (`tests/format.test.mjs`) cover every toolbar action, toggling, multi-line selections, list continuation and ending, nesting, fenced code, and minimal edit ranges. Statistics tests cover ZWNJ, mixed text, graphemes, and reading time.
 
 Validation: run `npm test`, `npm run build`, and `npm run build:web`. In a browser, check live edits and clearing, toolbar actions and keyboard navigation, shortcuts with English and Persian layouts, Enter/Tab in lists, undo after formatting, Persian/English text, GFM tables and code, narrow layouts, direct hash navigation, refresh, back/forward, and switching to the existing diff page. Feature tests render real Markdown to HTML and verify per-block direction attributes, GFM properties, code isolation, and safe rendering. Browser checks remain necessary to validate visual bidirectional layout. The repository architecture test checks import boundaries.

@@ -13,8 +13,12 @@ src/
   components/
     ui/                          Shared shadcn primitives
     copy-button.tsx              Shared clipboard action
+    file-open-button.tsx         Shared local file picker
+    file-drop-zone.tsx           Shared drag-and-drop wrapper
   lib/
     utils.ts                     Shared class-name utility
+    text-file.mjs                Pure file acceptance and decoding
+    read-text-file.ts            Browser file reading and Persian messages
   features/
     text-diff/
       index.ts                   Public entry point

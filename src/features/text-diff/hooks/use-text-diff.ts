@@ -85,6 +85,12 @@ export function useTextDiff() {
     setAfter(text)
   }
 
+  function replaceTexts(nextBefore: string, nextAfter: string) {
+    resetResult()
+    setBefore(nextBefore)
+    setAfter(nextAfter)
+  }
+
   function swapTexts() {
     resetResult()
     setBefore(after)
@@ -114,7 +120,7 @@ export function useTextDiff() {
 
   return {
     before, after, result, patch, busy, error, historyState,
-    updateBefore, updateAfter, swapTexts, clearTexts, openHistory, removeHistory,
+    updateBefore, updateAfter, swapTexts, clearTexts, openHistory, removeHistory, replaceTexts,
     compare: () => compare(), cancel: resetResult,
   }
 }
