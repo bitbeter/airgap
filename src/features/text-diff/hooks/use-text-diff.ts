@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import InlineDiffWorker from "../diff.worker?worker&inline"
 import { clearHistory, readHistory, saveHistory, type HistoryEntry } from "../lib/history.mjs"
-import type { DiffResult } from "../lib/compare.mjs"
+import { defaultOptions, normalizeOptions, readOptions, saveOptions } from "../lib/options.mjs"
+import type { DiffOptions, DiffResult } from "../lib/compare.mjs"
 import type { StructuredPatch } from "../lib/patch.mjs"
 
 export function useTextDiff() {
@@ -11,6 +12,13 @@ export function useTextDiff() {
   const [patch, setPatch] = useState<StructuredPatch | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
+  const [optionsState, setOptionsState] = useState<{ options: DiffOptions; error: string }>(() => {
+    try {
+      return { options: readOptions(window.localStorage), error: "" }
+    } catch {
+      return { options: { ...defaultOptions }, error: "دسترسی به گزینه‌های ذخیره‌شده ممکن نیست؛ گزینه‌های پیش‌فرض استفاده می‌شوند." }
+    }
+  })
   const [historyState, setHistoryState] = useState<{ entries: HistoryEntry[]; error: string }>(() => {
     try {
       return { entries: readHistory(window.localStorage), error: "" }
@@ -66,7 +74,7 @@ export function useTextDiff() {
         worker.terminate()
         workerRef.current = null
       }
-      worker.postMessage({ before: beforeText, after: afterText })
+      worker.postMessage({ before: beforeText, after: afterText, options: optionsState.options })
     } catch {
       workerRef.current?.terminate()
       workerRef.current = null
@@ -103,6 +111,19 @@ export function useTextDiff() {
     setAfter("")
   }
 
+  function updateOptions(next: DiffOptions) {
+    // Changing matching rules invalidates the current result and stops its worker.
+    resetResult()
+    const normalized = normalizeOptions(next)
+    let error = ""
+    try {
+      saveOptions(window.localStorage, normalized)
+    } catch {
+      error = "گزینه‌ها اعمال شدند، اما در مرورگر ذخیره نشدند؛ فضای ذخیره‌سازی پر یا غیرفعال است."
+    }
+    setOptionsState({ options: normalized, error })
+  }
+
   function openHistory(entry: HistoryEntry) {
     setBefore(entry.before)
     setAfter(entry.after)
@@ -120,7 +141,9 @@ export function useTextDiff() {
 
   return {
     before, after, result, patch, busy, error, historyState,
+    options: optionsState.options, optionsError: optionsState.error,
     updateBefore, updateAfter, swapTexts, clearTexts, openHistory, removeHistory, replaceTexts,
+    updateOptions,
     compare: () => compare(), cancel: resetResult,
   }
 }

@@ -8,16 +8,18 @@ Public entry: `index.ts`. Route: `#/text-diff`.
 - `hooks/use-text-diff.ts`: input/result state, worker creation and cleanup, cancellation, and history actions.
 - `components/text-input.tsx`: labeled input, character/line counts, shared copy and file-open buttons.
 - `components/diff-result.tsx`: result status, change navigation, collapse and whitespace toggles, cancellation, and full results.
-- `components/diff-view.tsx`: aligned side-by-side rows, collapsed-range placeholders, active-change marker, grapheme highlights, and invisible-character markers.
+- `components/diff-options.tsx`: opt-in ignore-option toggles and their storage error message.
+- `components/diff-view.tsx`: aligned side-by-side rows, collapsed-range placeholders, active-change marker, grapheme highlights, invisible-character markers, and ignored-difference markers.
 - `components/diff-minimap.tsx`: canvas change overview, viewport indicator, pointer and keyboard scroll navigation; measures rendered row heights and observes layout changes.
 - `components/patch-export.tsx`: editable patch file names, copy, and `.patch` download.
 - `components/diff-history.tsx`: stored comparisons, previews, reopen and clear actions.
 - `lib/compare.mjs`: pure jsdiff comparison; public types in `compare.d.mts`.
+- `lib/options.mjs`: ignore-option definitions, defaults, summary text, and versioned storage; public types in `options.d.mts`.
 - `lib/hunks.mjs`: pure grouping of changed rows and collapsing of unchanged runs; public types in `hunks.d.mts`.
 - `lib/patch.mjs`: jsdiff unified patch creation and formatting; public types in `patch.d.mts`.
 - `lib/history.mjs`: storage validation and retention; public types in `history.d.mts`.
 - `diff.worker.ts`: worker request/response adapter; returns the comparison and its structured patch.
-- `tests/`: comparison, Git compatibility, patch export (`git diff` and `git apply`), change navigation/collapsing, and storage regression tests.
+- `tests/`: comparison, Git compatibility, ignore options, patch export (`git diff` and `git apply`), change navigation/collapsing, and storage regression tests.
 
 ## Behavior to preserve
 
@@ -34,6 +36,16 @@ A change is one contiguous block of modified, added, or removed rows. "Previous 
 "Only changes and 3 surrounding lines" is off by default, so the full result is unchanged unless the user opts in. When on, unchanged runs keep three context lines next to each change; leading and trailing runs keep context only on the changed side. A hidden range must contain at least two rows, otherwise it stays visible. Each hidden range is a keyboard-accessible button that expands only that range. Change rows are never hidden. The setting persists while the page stays open; the navigation position and expanded ranges reset with each new result, so editing an input resets them. Nothing is stored.
 
 Rendered rows carry `data-diff-row` (their kind) and `data-diff-index`. The minimap reads kinds from the rendered rows, so collapsed ranges do not shift its markers; its resize observer remeasures after expanding.
+
+## Ignore options
+
+Six opt-in toggles, all off by default, make the comparison ignore cosmetic differences: leading/trailing whitespace per line, all whitespace (`git diff -w`), LF/CRLF, ASCII letter case, Arabic/Persian ي/ی and ك/ک plus Persian/Arabic/Latin digits, and blank lines. With every toggle off, `compareTexts` takes the original `diffLines` path and returns exactly the previous rows and counts.
+
+Normalization is only used to match lines and graphemes. Rows and inline segments always contain the user's original text. A row whose only differences are ignored is `same` with `ignored: true`; the result view marks it with a faint ≈ marker and does not count it in added/removed/modified. Inline highlights under active options also skip ignored characters, so a case-only change is not underlined when case is ignored. The result header names the active options, and the counters include the number of ignored differences.
+
+`ignoreWhitespace` also treats CRLF and LF endings as equal, matching `git diff -w`; neither `ignoreWhitespace` nor `ignoreCrLf` hides a missing final newline. `ignoreBlankLines` treats whitespace-only lines as blank and keeps blank-to-content replacements visible. Changing any toggle terminates the running worker and clears the current result. Opening a history entry compares with the current toggles.
+
+The selection is stored separately in `airgap:diff-options:v1` as an object with the six boolean option ids; the history schema and `airgap:diff-history:v1` are unchanged. Storage failures keep the in-memory selection and show a message. Patch export intentionally keeps the raw unified diff; the toggles only affect the comparison result.
 
 ## Patch export
 
@@ -69,4 +81,4 @@ npm test
 npm run build
 ```
 
-Git is required for compatibility tests. In a browser, also check copy, cancel, swap, patch copy/download, change navigation and shortcuts, collapsing and expanding with the minimap, inline highlights, whitespace display, results longer than 200 rows, history across reloads, and navigation away during comparison.
+Git is required for compatibility tests. `ignoreWhitespace`, `ignoreCrLf`, and `ignoreBlankLines` are checked against `git diff -w`, `--ignore-cr-at-eol`, and `--ignore-blank-lines`; case folding, trimming, and Persian normalization have independent unit tests because `git diff --no-index` has no `-i` and no leading-whitespace-only switch. In a browser, also check copy, cancel, swap, patch copy/download, change navigation and shortcuts, collapsing and expanding with the minimap, inline highlights, whitespace display, every ignore toggle and its persistence across reloads, the ≈ marker on ignored rows, results longer than 200 rows, history across reloads, and navigation away during comparison.

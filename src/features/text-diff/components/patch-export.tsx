@@ -9,9 +9,10 @@ interface PatchExportProps {
   patch: StructuredPatch | null
   names: { old: string; new: string }
   onNamesChange: (names: { old: string; new: string }) => void
+  optionsActive?: boolean
 }
 
-export function PatchExport({ patch, names, onNamesChange }: PatchExportProps) {
+export function PatchExport({ patch, names, onNamesChange, optionsActive = false }: PatchExportProps) {
   const id = useId()
   const [downloadFailed, setDownloadFailed] = useState(false)
   const text = useMemo(() => patch ? formatUnifiedPatch(patch, names.old, names.new) : "", [patch, names])
@@ -57,6 +58,7 @@ export function PatchExport({ patch, names, onNamesChange }: PatchExportProps) {
         {downloadFailed ? "دانلود انجام نشد؛ از دکمهٔ کپی استفاده کنید."
           : !patch ? "ساخت patch برای این متن‌ها بیش از حد طول کشید؛ نتیجهٔ مقایسه همچنان معتبر است."
           : !text ? "دو متن یکسان هستند؛ patch خالی است."
+          : optionsActive ? "خروجی patch همیشه تفاوت‌های خام را نشان می‌دهد؛ گزینه‌های نادیده‌گرفتن فقط روی نتیجهٔ مقایسه اعمال می‌شوند."
           : "فاصله‌ها و پایان خط‌ها دقیقاً حفظ می‌شوند. نام‌ها فقط در سربرگ patch استفاده می‌شوند و فاصله در آن‌ها به _ تبدیل می‌شود."}
       </p>
     </section>

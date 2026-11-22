@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DiffView } from "./diff-view"
 import { PatchExport } from "./patch-export"
-import type { DiffResult as ComparisonResult } from "../lib/compare.mjs"
+import type { DiffOptions, DiffResult as ComparisonResult } from "../lib/compare.mjs"
+import { describeOptions } from "../lib/options.mjs"
 import { collapseRows, groupChanges, type DisplayItem } from "../lib/hunks.mjs"
 import { defaultNewName, defaultOldName, type StructuredPatch } from "../lib/patch.mjs"
 
@@ -16,10 +17,11 @@ interface DiffResultProps {
   patch: StructuredPatch | null
   busy: boolean
   error: string
+  options: DiffOptions
   onCancel: () => void
 }
 
-export function DiffResult({ result, patch, busy, error, onCancel }: DiffResultProps) {
+export function DiffResult({ result, patch, busy, error, options, onCancel }: DiffResultProps) {
   const [showWhitespace, setShowWhitespace] = useState(false)
   const [collapse, setCollapse] = useState(false)
   const [patchNames, setPatchNames] = useState({ old: defaultOldName, new: defaultNewName })
@@ -27,6 +29,9 @@ export function DiffResult({ result, patch, busy, error, onCancel }: DiffResultP
   const [navigation, setNavigation] = useState<{ result: ComparisonResult | null; current: number | null; expanded: number[] }>({ result: null, current: null, expanded: noExpanded })
   const { current, expanded } = navigation.result === result ? navigation : { current: null, expanded: noExpanded }
   const regionRef = useRef<HTMLDivElement>(null)
+  const activeSummary = describeOptions(options)
+  const ignoreLineEndings = options.ignoreCrLf === true || options.ignoreWhitespace === true
+  const ignoredCount = useMemo(() => result ? result.rows.reduce((count, row) => count + (row.ignored ? 1 : 0), 0) : 0, [result])
 
   const changes = useMemo(() => result ? groupChanges(result.rows) : [], [result])
   const items = useMemo<DisplayItem[]>(() => !result ? [] : collapse
@@ -58,8 +63,9 @@ export function DiffResult({ result, patch, busy, error, onCancel }: DiffResultP
       <CardHeader>
         <CardTitle><h2>نتیجهٔ مقایسه</h2></CardTitle>
         <CardDescription aria-live="polite">
-          {busy ? "در حال بررسی تفاوت‌ها…" : result ? result.added || result.removed || result.modified ? `${result.modified.toLocaleString("fa-IR")} خط ویرایش‌شده · ${result.added.toLocaleString("fa-IR")} خط اضافه‌شده · ${result.removed.toLocaleString("fa-IR")} خط حذف‌شده` : "دو متن یکسان هستند." : "نتیجه پس از مقایسه در این بخش نمایش داده می‌شود."}
+          {busy ? "در حال بررسی تفاوت‌ها…" : result ? result.added || result.removed || result.modified ? `${result.modified.toLocaleString("fa-IR")} خط ویرایش‌شده · ${result.added.toLocaleString("fa-IR")} خط اضافه‌شده · ${result.removed.toLocaleString("fa-IR")} خط حذف‌شده${ignoredCount ? ` · ${ignoredCount.toLocaleString("fa-IR")} تفاوت نادیده‌گرفته‌شده` : ""}` : ignoredCount ? `${ignoredCount.toLocaleString("fa-IR")} تفاوت نادیده‌گرفته‌شده؛ دو متن از نظر محتوایی یکسان هستند.` : "دو متن یکسان هستند." : "نتیجه پس از مقایسه در این بخش نمایش داده می‌شود."}
         </CardDescription>
+        {activeSummary && <p className="text-xs leading-6 text-muted-foreground">مقایسه با نادیده‌گرفتن: {activeSummary}</p>}
       </CardHeader>
       <CardContent>
         {error && <p role="alert" className="mb-4 text-sm text-red-400">{error}</p>}
@@ -87,10 +93,11 @@ export function DiffResult({ result, patch, busy, error, onCancel }: DiffResultP
             </div>
             <p className="text-xs leading-6 text-muted-foreground">بخش‌های پررنگ و زیرخط‌دار تغییر کرده‌اند؛ قرمز در متن اصلی و سبز در متن جدید. برای رفتن به تغییر بعدی و قبلی کلید N و P را بزنید.</p>
             <p className="text-xs leading-6 text-muted-foreground">فاصلهٔ تغییرکرده: · ، تب: ⇥ ، نیم‌فاصله: [ZWNJ]؛ LF و CRLF پایان خط و EOF انتهای متن است.</p>
-            <DiffView rows={result.rows} items={items} activeChange={current === null ? null : changes[current]} showWhitespace={showWhitespace}
+            {ignoredCount > 0 && <p className="text-xs leading-6 text-muted-foreground">خطوطی که با نشانگر ≈ مشخص شده‌اند فقط در جنبه‌های نادیده‌گرفته‌شده تفاوت دارند.</p>}
+            <DiffView rows={result.rows} items={items} activeChange={current === null ? null : changes[current]} showWhitespace={showWhitespace} ignoreLineEndings={ignoreLineEndings}
               onExpand={(from) => setNavigation({ result, current, expanded: [...expanded, from] })} />
           </div>
-          <PatchExport patch={patch} names={patchNames} onNamesChange={setPatchNames} />
+          <PatchExport patch={patch} names={patchNames} onNamesChange={setPatchNames} optionsActive={activeSummary !== ""} />
           </div>
         )}
       </CardContent>

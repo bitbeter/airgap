@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { FileDropZone } from "@/components/file-drop-zone"
 import { describeReadResult, readTextFile } from "@/lib/read-text-file"
 import { TextInput } from "./components/text-input"
+import { DiffOptions } from "./components/diff-options"
 import { DiffResult } from "./components/diff-result"
 import { DiffHistory } from "./components/diff-history"
 import { useTextDiff } from "./hooks/use-text-diff"
@@ -84,12 +85,13 @@ export function TextDiffPage() {
           {fileStatus.text}
         </p>
       )}
+      <DiffOptions options={diff.options} error={diff.optionsError} onChange={diff.updateOptions} />
       <div className="flex flex-wrap gap-2">
         <Button onClick={diff.compare} disabled={diff.busy || empty}>{diff.busy ? <Loader2 className="animate-spin" /> : <FileDiff />}{diff.busy ? "در حال مقایسه…" : "نمایش تفاوت‌ها"}</Button>
         <Button variant="outline" disabled={empty} onClick={diff.swapTexts}><ArrowLeftRight />جابه‌جایی متن‌ها</Button>
         <Button variant="ghost" disabled={empty} onClick={diff.clearTexts}><Trash2 />پاک کردن</Button>
       </div>
-      <DiffResult result={diff.result} patch={diff.patch} busy={diff.busy} error={diff.error} onCancel={diff.cancel} />
+      <DiffResult result={diff.result} patch={diff.patch} busy={diff.busy} error={diff.error} options={diff.options} onCancel={diff.cancel} />
       <DiffHistory entries={diff.historyState.entries} error={diff.historyState.error} onOpen={diff.openHistory} onClear={diff.removeHistory} />
     </div>
   )
