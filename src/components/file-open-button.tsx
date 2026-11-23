@@ -8,10 +8,17 @@ interface FileOpenButtonProps {
   label?: string
   disabled?: boolean
   multiple?: boolean
+  accept?: string
 }
 
 /** Opens the native file picker and hands the chosen local files to the caller. */
-export function FileOpenButton({ onFiles, label = "باز کردن فایل", disabled = false, multiple = false }: FileOpenButtonProps) {
+export function FileOpenButton({
+  onFiles,
+  label = "باز کردن فایل",
+  disabled = false,
+  multiple = false,
+  accept = ACCEPTED_FILE_TYPES,
+}: FileOpenButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
 
@@ -33,7 +40,7 @@ export function FileOpenButton({ onFiles, label = "باز کردن فایل", di
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_FILE_TYPES}
+        accept={accept}
         multiple={multiple}
         className="sr-only"
         tabIndex={-1}

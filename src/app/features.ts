@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { Braces, CalendarDays, FileDiff, FilePenLine, Keyboard, ShieldCheck, SpellCheck } from "lucide-react"
+import { Binary, Braces, CalendarDays, FileDiff, FilePenLine, Keyboard, ShieldCheck, SpellCheck } from "lucide-react"
 import type { Feature } from "./feature"
 
 export const features: Feature[] = [
@@ -44,6 +44,12 @@ export const features: Feature[] = [
     title: "تبدیل تاریخ",
     icon: CalendarDays,
     Page: lazy(() => import("@/features/date-convert")),
+  },
+  {
+    path: "/encode",
+    title: "کدگذاری و هش",
+    icon: Binary,
+    Page: lazy(() => import("@/features/encode")),
   },
 ]
 
