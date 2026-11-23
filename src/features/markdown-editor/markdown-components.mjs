@@ -112,20 +112,31 @@ function plainText(children) {
 // A single auto direction on the preview would make later blocks inherit it.
 const autoBlocks = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "th", "td"]
 
+// `data-source-line` maps a rendered block back to its Markdown line for the
+// outline and scroll sync. It is opt-in so exports and direction tests keep
+// their exact markup.
+function sourceLineAttributes(node) {
+  const line = node?.position?.start?.line
+  return typeof line === "number" && Number.isFinite(line) ? { "data-source-line": String(line) } : {}
+}
+
 // The preview and exports share one safe renderer and differ only in how a
 // Mermaid diagram is displayed.
-export function createMarkdownComponents(Diagram) {
+export function createMarkdownComponents(Diagram, options = {}) {
+  const withSourceLines = options.sourceLines === true
+  const lineAttributes = (node) => withSourceLines ? sourceLineAttributes(node) : {}
+
   const components = Object.fromEntries(autoBlocks.map((tag) => [
     tag,
-    function AutoDirection({ node: _node, ...props }) {
-      return createElement(tag, { ...props, dir: "auto" })
+    function AutoDirection({ node, ...props }) {
+      return createElement(tag, { ...props, dir: "auto", ...lineAttributes(node) })
     },
   ]))
 
-  components.p = function Paragraph({ node: _node, children, ...props }) {
+  components.p = function Paragraph({ node, children, ...props }) {
     const source = plainText(children).trim()
     if (looksLikeMermaid(source)) return createElement(Diagram, { source })
-    return createElement("p", { ...props, dir: "auto" }, children)
+    return createElement("p", { ...props, dir: "auto", ...lineAttributes(node) }, children)
   }
 
   components.pre = function CodeBlock({ children, node }) {
@@ -135,7 +146,7 @@ export function createMarkdownComponents(Diagram) {
     const source = codeSource(code)
     const isMermaid = classes.some((name) => name.toLowerCase() === "language-mermaid") || looksLikeMermaid(source)
     if (isMermaid) return createElement(Diagram, { source: source.trim() })
-    return createElement("pre", { dir: "ltr" }, children)
+    return createElement("pre", { dir: "ltr", ...lineAttributes(node) }, children)
   }
 
   components.code = function Code({ node: _node, ...props }) {
@@ -155,3 +166,4 @@ export function createMarkdownComponents(Diagram) {
 }
 
 export const markdownComponents = createMarkdownComponents(MermaidDiagram)
+export const markdownComponentsWithSourceLines = createMarkdownComponents(MermaidDiagram, { sourceLines: true })

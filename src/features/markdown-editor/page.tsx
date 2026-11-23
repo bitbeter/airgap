@@ -9,15 +9,26 @@ import { FileDropZone } from "@/components/file-drop-zone"
 import { FileOpenButton } from "@/components/file-open-button"
 import { describeReadResult, readTextFile } from "@/lib/read-text-file"
 import { ExportMenu } from "./components/export-menu"
+import { Outline } from "./components/outline"
 import { MarkdownToolbar, modifierLabel } from "./components/toolbar"
 import { readDraft, saveDraft } from "./draft.mjs"
 import { changedRange, continueList, formatText, indentList, type FormatAction, type FormatResult } from "./format.mjs"
+import { editorScrollTopForLine, useScrollSync } from "./hooks/use-scroll-sync"
+import { extractOutline } from "./lib/outline.mjs"
+import { lineStartOffset } from "./lib/scroll-map.mjs"
 import { textStats } from "./stats.mjs"
-import { markdownComponents } from "./markdown-components.mjs"
+import { markdownComponentsWithSourceLines } from "./markdown-components.mjs"
+import { defaultSettings, readSettings, saveSettings, type EditorSettings, type ViewMode } from "./settings.mjs"
 import "./preview.css"
 import "./print.css"
 
 type FileStatus = { kind: "info" | "error"; text: string } | null
+
+const viewModeOptions: { value: ViewMode; label: string }[] = [
+  { value: "editor", label: "فقط ویرایشگر" },
+  { value: "both", label: "دوستونه" },
+  { value: "preview", label: "فقط پیش‌نمایش" },
+]
 
 export function MarkdownEditorPage() {
   const [{ text, storageError }, setDraft] = useState(() => {
@@ -41,10 +52,56 @@ export function MarkdownEditorPage() {
 
   const preview = useDeferredValue(text)
   const stats = useMemo(() => textStats(preview), [preview])
+  const headings = useMemo(() => extractOutline(text), [text])
   const sourceRef = useRef<HTMLTextAreaElement>(null)
   const previewRef = useRef<HTMLElement>(null)
   const fileRequest = useRef(0)
   const [fileStatus, setFileStatus] = useState<FileStatus>(null)
+  const [settings, setSettings] = useState<EditorSettings>(() => {
+    try {
+      return readSettings(window.localStorage)
+    } catch {
+      return { ...defaultSettings }
+    }
+  })
+
+  // Settings are best-effort: a failed save keeps the in-memory choice and
+  // never blocks editing.
+  function updateSettings(patch: Partial<EditorSettings>) {
+    const next = { ...settings, ...patch }
+    setSettings(next)
+    try {
+      saveSettings(window.localStorage, next)
+    } catch {
+      // Storage is optional; the editor stays usable.
+    }
+  }
+
+  useScrollSync({
+    sourceRef,
+    previewRef,
+    text,
+    previewText: preview,
+    enabled: settings.scrollSync && settings.viewMode !== "editor",
+  })
+
+  // Moves the caret to the heading line and brings the same heading into view
+  // in the preview. The preview lookup uses the rendered source-line marker.
+  function jumpToLine(line: number) {
+    const source = sourceRef.current
+    if (source) {
+      const offset = lineStartOffset(text, line)
+      source.focus()
+      source.setSelectionRange(offset, offset)
+      source.scrollTop = editorScrollTopForLine(source, text, line)
+    }
+    const previewElement = previewRef.current
+    const target = previewElement?.querySelector<HTMLElement>(`[data-source-line="${line}"]`)
+    if (previewElement && target) {
+      const top = target.getBoundingClientRect().top - previewElement.getBoundingClientRect().top + previewElement.scrollTop
+      previewElement.scrollTo({ top })
+    }
+  }
 
   async function openFile(file: File) {
     if (text !== "" && !window.confirm("متن فعلی ویرایشگر با محتوای فایل جایگزین شود؟")) return
@@ -106,14 +163,34 @@ export function MarkdownEditorPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">ویرایشگر Markdown</h1>
-        <p className="text-sm leading-7 text-muted-foreground">
-          متن را بنویسید و پیش‌نمایش آن را هم‌زمان ببینید. پردازش متن فقط در مرورگر شما انجام می‌شود.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">ویرایشگر Markdown</h1>
+          <p className="text-sm leading-7 text-muted-foreground">
+            متن را بنویسید و پیش‌نمایش آن را هم‌زمان ببینید. پردازش متن فقط در مرورگر شما انجام می‌شود.
+          </p>
+        </div>
+        <div role="group" aria-label="حالت نمایش" className="hidden items-center gap-2 lg:flex">
+          {viewModeOptions.map(({ value, label }) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={settings.viewMode === value ? "default" : "outline"}
+              aria-pressed={settings.viewMode === value}
+              onClick={() => updateSettings({ viewMode: value })}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
       </div>
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <FileDropZone className="min-w-0" onFiles={(files) => (files[0] ? openFile(files[0]) : undefined)}>
+      <Outline headings={headings} onSelect={jumpToLine} />
+      <div className={`grid items-start gap-6 ${settings.viewMode === "both" ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
+        <FileDropZone
+          className={settings.viewMode === "preview" ? "min-w-0 lg:hidden" : "min-w-0"}
+          onFiles={(files) => (files[0] ? openFile(files[0]) : undefined)}
+        >
           <Card className="min-w-0">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -163,9 +240,20 @@ export function MarkdownEditorPage() {
             </CardContent>
           </Card>
         </FileDropZone>
-        <Card className="min-w-0">
+        <Card className={settings.viewMode === "editor" ? "min-w-0 lg:hidden" : "min-w-0"}>
           <CardHeader className="space-y-3">
-            <CardTitle id="markdown-preview-title">پیش‌نمایش زنده</CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle id="markdown-preview-title">پیش‌نمایش زنده</CardTitle>
+              <label className="flex cursor-pointer items-center gap-2 text-xs leading-6 text-muted-foreground">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={settings.scrollSync}
+                  onChange={(event) => updateSettings({ scrollSync: event.target.checked })}
+                />
+                همگام‌سازی اسکرول
+              </label>
+            </div>
             <ExportMenu text={text} previewRef={previewRef} />
           </CardHeader>
           <CardContent>
@@ -174,10 +262,10 @@ export function MarkdownEditorPage() {
               aria-labelledby="markdown-preview-title"
               aria-busy={text !== preview}
               dir="rtl"
-              className="markdown-editor-preview min-h-[28rem] overflow-x-auto rounded-md border p-4 text-sm leading-7"
+              className="markdown-editor-preview max-h-[32rem] min-h-[28rem] overflow-auto rounded-md border p-4 text-sm leading-7"
             >
               {preview.trim() ? (
-                <Markdown remarkPlugins={[remarkGfm]} skipHtml components={markdownComponents}>{preview}</Markdown>
+                <Markdown remarkPlugins={[remarkGfm]} skipHtml components={markdownComponentsWithSourceLines}>{preview}</Markdown>
               ) : (
                 <p className="text-muted-foreground">با نوشتن متن، پیش‌نمایش اینجا نمایش داده می‌شود.</p>
               )}
