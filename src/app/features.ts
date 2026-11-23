@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { FileDiff, FilePenLine, Keyboard, SpellCheck } from "lucide-react"
+import { FileDiff, FilePenLine, Keyboard, ShieldCheck, SpellCheck } from "lucide-react"
 import type { Feature } from "./feature"
 
 export const features: Feature[] = [
@@ -26,6 +26,12 @@ export const features: Feature[] = [
     title: "اصلاح چیدمان صفحه‌کلید",
     icon: Keyboard,
     Page: lazy(() => import("@/features/keyboard-fix")),
+  },
+  {
+    path: "/redact",
+    title: "پنهان‌سازی اطلاعات حساس",
+    icon: ShieldCheck,
+    Page: lazy(() => import("@/features/redact")),
   },
 ]
 

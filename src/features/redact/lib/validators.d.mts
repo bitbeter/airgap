@@ -1,0 +1,11 @@
+export function toLatinDigits(value: string): string
+export function digitsOnly(value: string): string
+export function normalizeIranPhone(value: string): string
+export function isValidNationalId(value: string): boolean
+export function isValidLuhn(value: string): boolean
+export function isValidCardNumber(value: string): boolean
+export function isValidIban(value: string): boolean
+export function isValidIpv4(value: string): boolean
+export function isValidIpv6(value: string): boolean
+export function isValidIranMobile(value: string): boolean
+export function isValidIranLandline(value: string): boolean
