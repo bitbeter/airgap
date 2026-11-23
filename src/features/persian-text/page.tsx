@@ -69,13 +69,21 @@ export function PersianTextPage() {
         </p>
       </div>
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <InputPanel
-          text={persian.input}
-          notice={sampleNotice}
-          onChange={updateInput}
-          onClear={clear}
-          onLoadSample={loadSample}
-        />
+        <div className="min-w-0 space-y-6">
+          <InputPanel
+            text={persian.input}
+            notice={sampleNotice}
+            onChange={updateInput}
+            onClear={clear}
+            onLoadSample={loadSample}
+          />
+          <RulesPanel
+            settings={persian.settings}
+            error={persian.settingsError}
+            onChange={updateSettings}
+            onReset={resetSettings}
+          />
+        </div>
         <OutputPanel
           result={persian.result}
           segments={persian.segments}
@@ -91,12 +99,6 @@ export function PersianTextPage() {
           onRetry={persian.retry}
         />
       </div>
-      <RulesPanel
-        settings={persian.settings}
-        error={persian.settingsError}
-        onChange={updateSettings}
-        onReset={resetSettings}
-      />
     </div>
   )
 }

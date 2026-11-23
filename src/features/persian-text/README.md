@@ -4,7 +4,7 @@ Public entry: `index.ts`. Route: `#/persian-text`. Title: «ویرایش متن 
 
 ## File responsibilities
 
-- `page.tsx`: compose the two text columns and the rules panel; owns only the highlight toggle.
+- `page.tsx`: compose the input column (input card followed by the rules panel) and the output column; owns only the highlight toggle.
 - `hooks/use-persian-text.ts`: input/settings state, debounced normalization, worker lifecycle, cancellation, and settings storage.
 - `components/input-panel.tsx`: editable input, character/line counts, clear action.
 - `components/output-panel.tsx`: normalized output, copy action, summary, highlight toggle, apply-to-input and cancel actions.
@@ -56,7 +56,7 @@ URLs (`http://`, `https://`, `ftp://`, `www.`) and emails are always protected. 
 
 ## Storage
 
-Key: `airgap:persian-text:settings:v1`. Value: one object with boolean rule ids, `digits` (`persian` | `latin` | `none`), and `protectCode`. Missing or malformed values fall back to defaults. The text itself is never stored. Storage failures keep the in-memory settings and show a Persian message.
+Key: `airgap:persian-text:settings:v1`. Value: one object with boolean rule ids, `digits` (`persian` | `latin` | `none`), and `protectCode`. Every rule change is saved immediately, so the rules panel keeps its state across reloads and navigation. Missing or malformed values fall back to defaults. The text itself is never stored. Storage failures keep the in-memory settings and show a Persian message.
 
 ## Worker
 
