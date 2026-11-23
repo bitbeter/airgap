@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { FileDiff, FilePenLine, Keyboard, ShieldCheck, SpellCheck } from "lucide-react"
+import { Braces, FileDiff, FilePenLine, Keyboard, ShieldCheck, SpellCheck } from "lucide-react"
 import type { Feature } from "./feature"
 
 export const features: Feature[] = [
@@ -32,6 +32,12 @@ export const features: Feature[] = [
     title: "پنهان‌سازی اطلاعات حساس",
     icon: ShieldCheck,
     Page: lazy(() => import("@/features/redact")),
+  },
+  {
+    path: "/json-format",
+    title: "قالب‌بندی JSON",
+    icon: Braces,
+    Page: lazy(() => import("@/features/json-format")),
   },
 ]
 
