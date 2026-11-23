@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { Braces, FileDiff, FilePenLine, Keyboard, ShieldCheck, SpellCheck } from "lucide-react"
+import { Braces, CalendarDays, FileDiff, FilePenLine, Keyboard, ShieldCheck, SpellCheck } from "lucide-react"
 import type { Feature } from "./feature"
 
 export const features: Feature[] = [
@@ -38,6 +38,12 @@ export const features: Feature[] = [
     title: "قالب‌بندی JSON",
     icon: Braces,
     Page: lazy(() => import("@/features/json-format")),
+  },
+  {
+    path: "/date-convert",
+    title: "تبدیل تاریخ",
+    icon: CalendarDays,
+    Page: lazy(() => import("@/features/date-convert")),
   },
 ]
 
