@@ -19,6 +19,7 @@ src/
     copy-button.tsx              Shared clipboard action
     file-open-button.tsx         Shared local file picker
     file-drop-zone.tsx           Shared drag-and-drop wrapper
+    fullscreen.tsx               Shared fullscreen toggle and overlay fallback
   lib/
     utils.ts                     Shared class-name utility
     text-file.mjs                Pure file acceptance and decoding

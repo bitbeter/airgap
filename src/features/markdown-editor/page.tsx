@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { FileDropZone } from "@/components/file-drop-zone"
 import { FileOpenButton } from "@/components/file-open-button"
+import { FullscreenButton, useFullscreen } from "@/components/fullscreen"
 import { describeReadResult, readTextFile } from "@/lib/read-text-file"
+import { cn } from "@/lib/utils"
 import { ExportMenu } from "./components/export-menu"
 import { Outline } from "./components/outline"
 import { MarkdownToolbar, modifierLabel } from "./components/toolbar"
@@ -55,6 +57,8 @@ export function MarkdownEditorPage() {
   const headings = useMemo(() => extractOutline(text), [text])
   const sourceRef = useRef<HTMLTextAreaElement>(null)
   const previewRef = useRef<HTMLElement>(null)
+  const editorFullscreen = useFullscreen<HTMLDivElement>()
+  const previewFullscreen = useFullscreen<HTMLDivElement>()
   const fileRequest = useRef(0)
   const [fileStatus, setFileStatus] = useState<FileStatus>(null)
   const [settings, setSettings] = useState<EditorSettings>(() => {
@@ -191,8 +195,8 @@ export function MarkdownEditorPage() {
           className={settings.viewMode === "preview" ? "min-w-0 lg:hidden" : "min-w-0"}
           onFiles={(files) => (files[0] ? openFile(files[0]) : undefined)}
         >
-          <Card className="min-w-0">
-            <CardHeader>
+          <Card ref={editorFullscreen.ref} className={cn("min-w-0", editorFullscreen.panelClassName)}>
+            <CardHeader className={editorFullscreen.active ? "shrink-0" : undefined}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <CardTitle><label htmlFor="markdown-source">متن Markdown</label></CardTitle>
                 <div className="flex flex-wrap items-center gap-2">
@@ -200,6 +204,7 @@ export function MarkdownEditorPage() {
                   <Button type="button" variant="outline" size="sm" onClick={() => updateText("")}>
                     پاک کردن
                   </Button>
+                  <FullscreenButton active={editorFullscreen.active} onToggle={editorFullscreen.toggle} label="متن Markdown" />
                 </div>
               </div>
               <p id="markdown-storage-status" role="status" className="text-sm leading-7 text-muted-foreground">
@@ -210,9 +215,9 @@ export function MarkdownEditorPage() {
                     : "متن به‌صورت خودکار در این مرورگر ذخیره می‌شود؛ با پاک کردن کامل متن، نسخهٔ ذخیره‌شده هم حذف می‌شود."}
               </p>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className={cn("space-y-3", editorFullscreen.active && "flex min-h-0 flex-1 flex-col")}>
               {fileStatus && (
-                <p role="status" className={fileStatus.kind === "error" ? "text-sm leading-7 text-red-400" : "text-sm leading-7 text-muted-foreground"}>
+                <p role="status" className={cn("shrink-0", fileStatus.kind === "error" ? "text-sm leading-7 text-red-400" : "text-sm leading-7 text-muted-foreground")}>
                   {fileStatus.text}
                 </p>
               )}
@@ -227,9 +232,9 @@ export function MarkdownEditorPage() {
                 aria-describedby="markdown-storage-status markdown-editor-help"
                 placeholder="متن Markdown را اینجا بنویسید…"
                 spellCheck={false}
-                className="markdown-editor-source min-h-[28rem] resize-y font-mono leading-7"
+                className={cn("markdown-editor-source min-h-[28rem] resize-y font-mono leading-7", editorFullscreen.active && "min-h-0 flex-1 resize-none")}
               />
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs leading-6 text-muted-foreground">
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs leading-6 text-muted-foreground">
                 <p aria-label="آمار متن">
                   {number(stats.words)} کلمه · {number(stats.characters)} نویسه · {number(stats.lines)} خط · {stats.readingMinutes ? `حدود ${number(stats.readingMinutes)} دقیقه مطالعه` : "بدون زمان مطالعه"}
                 </p>
@@ -240,29 +245,32 @@ export function MarkdownEditorPage() {
             </CardContent>
           </Card>
         </FileDropZone>
-        <Card className={settings.viewMode === "editor" ? "min-w-0 lg:hidden" : "min-w-0"}>
-          <CardHeader className="space-y-3">
+        <Card ref={previewFullscreen.ref} className={cn(settings.viewMode === "editor" ? "min-w-0 lg:hidden" : "min-w-0", previewFullscreen.panelClassName)}>
+          <CardHeader className={cn("space-y-3", previewFullscreen.active && "shrink-0")}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle id="markdown-preview-title">پیش‌نمایش زنده</CardTitle>
-              <label className="flex cursor-pointer items-center gap-2 text-xs leading-6 text-muted-foreground">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={settings.scrollSync}
-                  onChange={(event) => updateSettings({ scrollSync: event.target.checked })}
-                />
-                همگام‌سازی اسکرول
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex cursor-pointer items-center gap-2 text-xs leading-6 text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={settings.scrollSync}
+                    onChange={(event) => updateSettings({ scrollSync: event.target.checked })}
+                  />
+                  همگام‌سازی اسکرول
+                </label>
+                <FullscreenButton active={previewFullscreen.active} onToggle={previewFullscreen.toggle} label="پیش‌نمایش" />
+              </div>
             </div>
             <ExportMenu text={text} previewRef={previewRef} />
           </CardHeader>
-          <CardContent>
+          <CardContent className={cn(previewFullscreen.active && "flex min-h-0 flex-1 flex-col")}>
             <section
               ref={previewRef}
               aria-labelledby="markdown-preview-title"
               aria-busy={text !== preview}
               dir="rtl"
-              className="markdown-editor-preview max-h-[32rem] min-h-[28rem] overflow-auto rounded-md border p-4 text-sm leading-7"
+              className={cn("markdown-editor-preview max-h-[32rem] min-h-[28rem] overflow-auto rounded-md border p-4 text-sm leading-7", previewFullscreen.active && "max-h-none min-h-0 flex-1")}
             >
               {preview.trim() ? (
                 <Markdown remarkPlugins={[remarkGfm]} skipHtml components={markdownComponentsWithSourceLines}>{preview}</Markdown>

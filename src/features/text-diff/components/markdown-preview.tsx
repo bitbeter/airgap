@@ -1,11 +1,12 @@
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { cn } from "@/lib/utils"
 import { MermaidDiagram } from "./mermaid-diagram"
 import "./markdown-preview.css"
 
-export default function MarkdownPreview({ text, title }: { text: string; title: string }) {
+export default function MarkdownPreview({ text, title, className }: { text: string; title: string; className?: string }) {
   return (
-    <section aria-label={`پیش‌نمایش ${title}`} className="markdown-preview min-h-72 overflow-x-auto rounded-md border p-4 text-sm leading-7" dir="auto">
+    <section aria-label={`پیش‌نمایش ${title}`} className={cn("markdown-preview min-h-72 overflow-x-auto rounded-md border p-4 text-sm leading-7", className)} dir="auto">
       {!text ? <p className="text-muted-foreground">متنی برای پیش‌نمایش وجود ندارد.</p> : (
         <Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
           pre({ children, node }) {

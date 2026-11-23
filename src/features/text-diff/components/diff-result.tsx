@@ -2,6 +2,8 @@ import { useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { ChevronDown, ChevronUp, FileDiff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { FullscreenButton, useFullscreen } from "@/components/fullscreen"
+import { cn } from "@/lib/utils"
 import { DiffView } from "./diff-view"
 import { PatchExport } from "./patch-export"
 import type { DiffOptions, DiffResult as ComparisonResult } from "../lib/compare.mjs"
@@ -22,6 +24,7 @@ interface DiffResultProps {
 }
 
 export function DiffResult({ result, patch, busy, error, options, onCancel }: DiffResultProps) {
+  const fullscreen = useFullscreen<HTMLDivElement>()
   const [showWhitespace, setShowWhitespace] = useState(false)
   const [collapse, setCollapse] = useState(false)
   const [patchNames, setPatchNames] = useState({ old: defaultOldName, new: defaultNewName })
@@ -59,16 +62,19 @@ export function DiffResult({ result, patch, busy, error, options, onCancel }: Di
   }
 
   return (
-    <Card aria-busy={busy}>
-      <CardHeader>
-        <CardTitle><h2>نتیجهٔ مقایسه</h2></CardTitle>
+    <Card ref={fullscreen.ref} aria-busy={busy} className={cn("min-w-0", fullscreen.panelClassName)}>
+      <CardHeader className={fullscreen.active ? "shrink-0" : undefined}>
+        <div className="flex items-start justify-between gap-3">
+          <CardTitle><h2>نتیجهٔ مقایسه</h2></CardTitle>
+          <FullscreenButton active={fullscreen.active} onToggle={fullscreen.toggle} label="نتیجهٔ مقایسه" />
+        </div>
         <CardDescription aria-live="polite">
           {busy ? "در حال بررسی تفاوت‌ها…" : result ? result.added || result.removed || result.modified ? `${result.modified.toLocaleString("fa-IR")} خط ویرایش‌شده · ${result.added.toLocaleString("fa-IR")} خط اضافه‌شده · ${result.removed.toLocaleString("fa-IR")} خط حذف‌شده${ignoredCount ? ` · ${ignoredCount.toLocaleString("fa-IR")} تفاوت نادیده‌گرفته‌شده` : ""}` : ignoredCount ? `${ignoredCount.toLocaleString("fa-IR")} تفاوت نادیده‌گرفته‌شده؛ دو متن از نظر محتوایی یکسان هستند.` : "دو متن یکسان هستند." : "نتیجه پس از مقایسه در این بخش نمایش داده می‌شود."}
         </CardDescription>
         {activeSummary && <p className="text-xs leading-6 text-muted-foreground">مقایسه با نادیده‌گرفتن: {activeSummary}</p>}
       </CardHeader>
-      <CardContent>
-        {error && <p role="alert" className="mb-4 text-sm text-red-400">{error}</p>}
+      <CardContent className={cn(fullscreen.active && "flex min-h-0 flex-1 flex-col")}>
+        {error && <p role="alert" className="mb-4 shrink-0 text-sm text-red-400">{error}</p>}
         {!result ? (
           <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
             <FileDiff className="size-8" aria-hidden="true" />
@@ -76,9 +82,9 @@ export function DiffResult({ result, patch, busy, error, options, onCancel }: Di
             {busy && <Button variant="outline" onClick={onCancel}>لغو مقایسه</Button>}
           </div>
         ) : (
-          <div className="space-y-4">
-          <div ref={regionRef} className="space-y-4" onKeyDown={onKeyDown}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className={cn("space-y-4", fullscreen.active && "flex min-h-0 flex-1 flex-col")}>
+          <div ref={regionRef} className={cn("space-y-4", fullscreen.active && "flex min-h-0 flex-1 flex-col")} onKeyDown={onKeyDown}>
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2" role="group" aria-label="پیمایش تغییرات">
                 <Button variant="outline" size="sm" disabled={previous < 0} onClick={() => goTo(previous)} title="تغییر قبلی (P یا K)"><ChevronUp />تغییر قبلی</Button>
                 <Button variant="outline" size="sm" disabled={next >= changes.length} onClick={() => goTo(next)} title="تغییر بعدی (N یا J)"><ChevronDown />تغییر بعدی</Button>
@@ -91,13 +97,13 @@ export function DiffResult({ result, patch, busy, error, options, onCancel }: Di
                 <Button variant="outline" size="sm" aria-pressed={showWhitespace} onClick={() => setShowWhitespace(!showWhitespace)}>نمایش همهٔ فاصله‌ها {showWhitespace ? "✓" : ""}</Button>
               </div>
             </div>
-            <p className="text-xs leading-6 text-muted-foreground">بخش‌های پررنگ و زیرخط‌دار تغییر کرده‌اند؛ قرمز در متن اصلی و سبز در متن جدید. برای رفتن به تغییر بعدی و قبلی کلید N و P را بزنید.</p>
-            <p className="text-xs leading-6 text-muted-foreground">فاصلهٔ تغییرکرده: · ، تب: ⇥ ، نیم‌فاصله: [ZWNJ]؛ LF و CRLF پایان خط و EOF انتهای متن است.</p>
-            {ignoredCount > 0 && <p className="text-xs leading-6 text-muted-foreground">خطوطی که با نشانگر ≈ مشخص شده‌اند فقط در جنبه‌های نادیده‌گرفته‌شده تفاوت دارند.</p>}
-            <DiffView rows={result.rows} items={items} activeChange={current === null ? null : changes[current]} showWhitespace={showWhitespace} ignoreLineEndings={ignoreLineEndings}
+            {!fullscreen.active && <p className="shrink-0 text-xs leading-6 text-muted-foreground">بخش‌های پررنگ و زیرخط‌دار تغییر کرده‌اند؛ قرمز در متن اصلی و سبز در متن جدید. برای رفتن به تغییر بعدی و قبلی کلید N و P را بزنید.</p>}
+            {!fullscreen.active && <p className="shrink-0 text-xs leading-6 text-muted-foreground">فاصلهٔ تغییرکرده: · ، تب: ⇥ ، نیم‌فاصله: [ZWNJ]؛ LF و CRLF پایان خط و EOF انتهای متن است.</p>}
+            {!fullscreen.active && ignoredCount > 0 && <p className="shrink-0 text-xs leading-6 text-muted-foreground">خطوطی که با نشانگر ≈ مشخص شده‌اند فقط در جنبه‌های نادیده‌گرفته‌شده تفاوت دارند.</p>}
+            <DiffView fullscreen={fullscreen.active} rows={result.rows} items={items} activeChange={current === null ? null : changes[current]} showWhitespace={showWhitespace} ignoreLineEndings={ignoreLineEndings}
               onExpand={(from) => setNavigation({ result, current, expanded: [...expanded, from] })} />
           </div>
-          <PatchExport patch={patch} names={patchNames} onNamesChange={setPatchNames} optionsActive={activeSummary !== ""} />
+          <PatchExport patch={patch} names={patchNames} onNamesChange={setPatchNames} optionsActive={activeSummary !== ""} collapsible={fullscreen.active} />
           </div>
         )}
       </CardContent>

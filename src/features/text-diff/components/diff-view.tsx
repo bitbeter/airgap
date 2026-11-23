@@ -71,15 +71,17 @@ type DiffViewProps = {
   showWhitespace: boolean
   ignoreLineEndings: boolean
   onExpand: (from: number) => void
+  /** Grows with the fullscreen result card instead of keeping its usual cap. */
+  fullscreen?: boolean
 }
 
-export function DiffView({ rows, items, activeChange, showWhitespace, ignoreLineEndings, onExpand }: DiffViewProps) {
+export function DiffView({ rows, items, activeChange, showWhitespace, ignoreLineEndings, onExpand, fullscreen = false }: DiffViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
   return (
-    <div className="flex items-stretch gap-2">
-    <div ref={scrollRef} className="min-w-0 flex-1 max-h-[36rem] overflow-auto rounded-md border" role="region" aria-label="مقایسهٔ کنارهم متن اصلی و جدید" tabIndex={0}>
+    <div className="flex min-h-0 flex-1 items-stretch gap-2">
+    <div ref={scrollRef} className={cn("min-w-0 flex-1 overflow-auto rounded-md border", fullscreen ? "max-h-none" : "max-h-[36rem]")} role="region" aria-label="مقایسهٔ کنارهم متن اصلی و جدید" tabIndex={0}>
       <div ref={contentRef} className="min-w-[640px]">
         <div className="sticky top-0 z-10 grid grid-cols-2 border-b bg-background text-sm font-medium"><div className="border-e px-4 py-3">متن اصلی <span className="text-red-400">(−)</span></div><div className="px-4 py-3">متن جدید <span className="text-green-400">(+)</span></div></div>
         {items.map((item) => {

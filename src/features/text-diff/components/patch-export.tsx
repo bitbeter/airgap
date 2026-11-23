@@ -10,9 +10,11 @@ interface PatchExportProps {
   names: { old: string; new: string }
   onNamesChange: (names: { old: string; new: string }) => void
   optionsActive?: boolean
+  /** In fullscreen, keep patch tools available but collapsed to save reading space. */
+  collapsible?: boolean
 }
 
-export function PatchExport({ patch, names, onNamesChange, optionsActive = false }: PatchExportProps) {
+export function PatchExport({ patch, names, onNamesChange, optionsActive = false, collapsible = false }: PatchExportProps) {
   const id = useId()
   const [downloadFailed, setDownloadFailed] = useState(false)
   const text = useMemo(() => patch ? formatUnifiedPatch(patch, names.old, names.new) : "", [patch, names])
@@ -32,14 +34,14 @@ export function PatchExport({ patch, names, onNamesChange, optionsActive = false
     }
   }
 
-  return (
-    <section aria-labelledby={`${id}-title`} className="space-y-3 rounded-md border p-4">
-      <div className="space-y-1">
-        <h3 id={`${id}-title`} className="text-sm font-medium">خروجی patch</h3>
-        <p className="text-xs leading-6 text-muted-foreground">
-          قالب unified diff با {patchContext.toLocaleString("fa-IR")} خط اطراف هر تغییر؛ قابل استفاده با <span dir="ltr">git apply</span> و ابزارهای بازبینی کد.
-        </p>
-      </div>
+  const description = (
+    <p className="text-xs leading-6 text-muted-foreground">
+      قالب unified diff با {patchContext.toLocaleString("fa-IR")} خط اطراف هر تغییر؛ قابل استفاده با <span dir="ltr">git apply</span> و ابزارهای بازبینی کد.
+    </p>
+  )
+
+  const controls = (
+    <>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label htmlFor={`${id}-old`} className="text-xs text-muted-foreground">نام فایل اصلی</label>
@@ -61,6 +63,28 @@ export function PatchExport({ patch, names, onNamesChange, optionsActive = false
           : optionsActive ? "خروجی patch همیشه تفاوت‌های خام را نشان می‌دهد؛ گزینه‌های نادیده‌گرفتن فقط روی نتیجهٔ مقایسه اعمال می‌شوند."
           : "فاصله‌ها و پایان خط‌ها دقیقاً حفظ می‌شوند. نام‌ها فقط در سربرگ patch استفاده می‌شوند و فاصله در آن‌ها به _ تبدیل می‌شود."}
       </p>
+    </>
+  )
+
+  if (collapsible) {
+    return (
+      <details className="shrink-0 rounded-md border">
+        <summary className="cursor-pointer px-4 py-2 text-sm font-medium">خروجی patch</summary>
+        <div className="max-h-[40vh] space-y-3 overflow-auto border-t p-4">
+          {description}
+          {controls}
+        </div>
+      </details>
+    )
+  }
+
+  return (
+    <section aria-labelledby={`${id}-title`} className="space-y-3 rounded-md border p-4">
+      <div className="space-y-1">
+        <h3 id={`${id}-title`} className="text-sm font-medium">خروجی patch</h3>
+        {description}
+      </div>
+      {controls}
     </section>
   )
 }

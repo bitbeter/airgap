@@ -58,7 +58,7 @@ export function MarkdownToolbar({ controls, onAction }: { controls: string; onAc
 
   return (
     <div role="toolbar" aria-label="قالب‌بندی Markdown" aria-controls={controls} onKeyDown={onKeyDown}
-      className="flex flex-wrap items-center gap-y-1 rounded-md border p-1">
+      className="flex shrink-0 flex-wrap items-center gap-y-1 rounded-md border p-1">
       {groups.map((group, groupIndex) => (
         <div key={groupIndex} className="flex shrink-0 items-center gap-0.5">
           {groupIndex > 0 && <div role="separator" aria-orientation="vertical" className="mx-1 h-5 w-px bg-border" />}

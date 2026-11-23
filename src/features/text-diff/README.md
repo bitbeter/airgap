@@ -37,6 +37,10 @@ A change is one contiguous block of modified, added, or removed rows. "Previous 
 
 Rendered rows carry `data-diff-row` (their kind) and `data-diff-index`. The minimap reads kinds from the rendered rows, so collapsed ranges do not shift its markers; its resize observer remeasures after expanding.
 
+## Fullscreen
+
+Each text input and the comparison result have a fullscreen button in their card header. The card uses the browser Fullscreen API when available; if the browser rejects it or does not expose the API (for example iOS Safari), the card becomes a fixed in-page panel instead. In fullscreen the input textarea or Markdown preview grows to the available height, and the result's diff view and minimap fill the space. The patch export collapses to a summary so the diff keeps the reading area, and its contents scroll inside the summary when opened. Escape exits native fullscreen; the in-page fallback also closes with Escape or the same button. Leaving the page exits native fullscreen, and the fallback restores page scrolling. Comparison, history, patch, and ignore-option behavior are unchanged.
+
 ## Ignore options
 
 Six opt-in toggles, all off by default, make the comparison ignore cosmetic differences: leading/trailing whitespace per line, all whitespace (`git diff -w`), LF/CRLF, ASCII letter case, Arabic/Persian ي/ی and ك/ک plus Persian/Arabic/Latin digits, and blank lines. With every toggle off, `compareTexts` takes the original `diffLines` path and returns exactly the previous rows and counts.
@@ -81,4 +85,4 @@ npm test
 npm run build
 ```
 
-Git is required for compatibility tests. `ignoreWhitespace`, `ignoreCrLf`, and `ignoreBlankLines` are checked against `git diff -w`, `--ignore-cr-at-eol`, and `--ignore-blank-lines`; case folding, trimming, and Persian normalization have independent unit tests because `git diff --no-index` has no `-i` and no leading-whitespace-only switch. In a browser, also check copy, cancel, swap, patch copy/download, change navigation and shortcuts, collapsing and expanding with the minimap, inline highlights, whitespace display, every ignore toggle and its persistence across reloads, the ≈ marker on ignored rows, results longer than 200 rows, history across reloads, and navigation away during comparison.
+Git is required for compatibility tests. `ignoreWhitespace`, `ignoreCrLf`, and `ignoreBlankLines` are checked against `git diff -w`, `--ignore-cr-at-eol`, and `--ignore-blank-lines`; case folding, trimming, and Persian normalization have independent unit tests because `git diff --no-index` has no `-i` and no leading-whitespace-only switch. In a browser, also check copy, cancel, swap, patch copy/download, change navigation and shortcuts, collapsing and expanding with the minimap, inline highlights, whitespace display, every ignore toggle and its persistence across reloads, the ≈ marker on ignored rows, results longer than 200 rows, history across reloads, and navigation away during comparison. Check fullscreen on both inputs and the result, including Escape, the in-page fallback, and leaving the page while fullscreen.
