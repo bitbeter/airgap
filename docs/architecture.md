@@ -7,9 +7,13 @@ src/
   main.tsx                       Mount React and global CSS
   index.css                      Global dark shadcn theme
   app/
-    App.tsx                      Shell, hash navigation, loading and not-found states
-    feature.ts                   Page registration contract
+    App.tsx                      Shell, hash navigation, header, loading and not-found states
+    feature.ts                   Page registration contract, including description/keywords
     features.ts                  The only feature registration list
+    home.tsx                     Tool launcher cards generated from the registry
+    command-palette.tsx          Accessible fuzzy tool search and recent tools
+    search.mjs                   Pure Persian-aware normalization and fuzzy ranking
+    recent.mjs                   Versioned recent-path storage helpers
   components/
     ui/                          Shared shadcn primitives
     copy-button.tsx              Shared clipboard action
@@ -46,9 +50,11 @@ Features do not depend on other features or the app shell. Shared modules do not
 
 ## Routing and loading
 
-`src/app/features.ts` registers each page's path, Persian title, Lucide icon, and lazy component. The shell uses that same registry for navigation and rendering. Adding a feature does not require editing the shell or another feature.
+`src/app/features.ts` registers each page's path, Persian title, one-sentence description, search keywords, Lucide icon, and lazy component. The shell uses that same registry for navigation, the home page cards, and command-palette search. Adding a feature does not require editing the shell or another feature.
 
-Routes use hashes, such as `#/text-diff`, so static hosting needs no history fallback configuration. An empty hash selects `defaultPath`. Unknown hashes show a not-found state. Native anchors and the `hashchange` subscription support refresh, direct links, and browser back/forward. The document title follows the selected page.
+Routes use hashes, such as `#/text-diff`, so static hosting needs no history fallback configuration. `#/` is the home page; an empty hash still selects `defaultPath` (`/text-diff`). Unknown hashes show a not-found state. Native anchors and the `hashchange` subscription support refresh, direct links, and browser back/forward. The document title follows the selected page.
+
+The header shows the full tool navigation on wide screens and a dropdown menu below the `xl` breakpoint. The logo links to `#/`. A command palette opens with Ctrl/⌘+K or `/` (the slash shortcut is ignored while typing in an input, textarea, select, or contenteditable element). Search is local and fuzzy over titles, descriptions, and keywords; it normalizes Arabic/Persian yeh and kaf, diacritics, and ZWNJ. The palette traps focus, closes with Escape, restores the previous focus, and supports arrow keys plus Enter. It lists the five most recently opened tool paths from `airgap:shell:recent:v1` (paths only, never tool content) and degrades quietly when storage is unavailable.
 
 Features load lazily in development and the web build (`npm run build:web`). The default `npm run build` embeds JavaScript, CSS, and dynamic imports into a portable `dist/index.html` using `vite-plugin-singlefile`, so the file can be opened directly without a server. Both builds replace `dist`. The portable build trades deferred network loading for a larger self-contained file.
 

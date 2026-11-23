@@ -5,9 +5,9 @@
 1. Choose a kebab-case slug, for example `json-format`.
 2. Create `src/features/<slug>/page.tsx` and `index.ts`.
 3. Implement the page using shared shadcn components. Add local `components/`, `hooks/`, `lib/`, or workers only when needed.
-4. Add one registration in `src/app/features.ts`. Import the icon there. Do not edit `App.tsx`, `main.tsx`, or `text-diff` to add a page.
+4. Add one registration in `src/app/features.ts`. Import the icon there. Include a one-sentence Persian `description` and Persian/English `keywords`; the home page and command palette read them from this registry. Do not edit `App.tsx`, `main.tsx`, or `text-diff` to add a page.
 5. Add a short feature README describing its behavior, state/storage, and tests. Add meaningful logic tests under the feature's `tests/` directory.
-6. Run `npm test` and `npm run build`. Check the new hash URL, generated navigation, refresh, back/forward, and existing diff behavior in a browser when available.
+6. Run `npm test` and `npm run build`. Check the new hash URL, generated navigation, home card, palette search, refresh, back/forward, and existing diff behavior in a browser when available.
 
 ## Minimal page
 
@@ -35,12 +35,14 @@ In `src/app/features.ts`, import `Braces` from `lucide-react` and append this ob
 {
   path: "/json-format",
   title: "قالب‌بندی JSON",
+  description: "قالب‌بندی، کوچک‌سازی و اعتبارسنجی JSON همراه با نمایش درختی.",
+  keywords: ["json", "قالب‌بندی", "format", "minify", "اعتبارسنجی"],
   icon: Braces,
   Page: lazy(() => import("@/features/json-format")),
 },
 ```
 
-The page is now available at `#/json-format`, with its own navigation item, active state, document title, and lazy-loaded bundle. Keep the existing `defaultPath` unless the requested feature should become the landing page.
+The page is now available at `#/json-format`, with its own navigation item, active state, document title, home card, palette entry, and lazy-loaded bundle. Keep the existing `defaultPath` unless the requested feature should become the landing page. `description` and `keywords` are optional in the `Feature` type, but registered tools should provide both; `tests/search.test.mjs` checks this.
 
 ## Feature-specific behavior
 
