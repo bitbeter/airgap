@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { FileDiff, FilePenLine } from "lucide-react"
+import { FileDiff, FilePenLine, SpellCheck } from "lucide-react"
 import type { Feature } from "./feature"
 
 export const features: Feature[] = [
@@ -14,6 +14,12 @@ export const features: Feature[] = [
     title: "ویرایشگر Markdown",
     icon: FilePenLine,
     Page: lazy(() => import("@/features/markdown-editor")),
+  },
+  {
+    path: "/persian-text",
+    title: "ویرایش متن فارسی",
+    icon: SpellCheck,
+    Page: lazy(() => import("@/features/persian-text")),
   },
 ]
 
